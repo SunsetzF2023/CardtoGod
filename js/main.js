@@ -10,7 +10,7 @@ import { CONSTANTS, STORAGE_KEYS } from './data/constants.js';
 class CardToGod {
     constructor() {
         this.gameEngine = null;
-        this.uiManager = null;
+        this.ui = null; // 改为ui以匹配HTML调用
         this.isInitialized = false;
     }
 
@@ -29,8 +29,8 @@ class CardToGod {
             await this.gameEngine.init();
             
             // 初始化UI管理器
-            this.uiManager = new UIManager(this.gameEngine);
-            await this.uiManager.init();
+            this.ui = new UIManager(this.gameEngine);
+            await this.ui.init();
             
             // 绑定全局事件
             this.bindGlobalEvents();

@@ -13,6 +13,7 @@ import {
     CARD_PACK_CONFIG,
     PITY_CONFIG
 } from '../data/constants.js';
+import { ALL_CARDS } from '../data/cards.js';
 
 export class CardSystem {
     constructor(gameEngine) {
@@ -40,184 +41,12 @@ export class CardSystem {
      * 初始化卡牌数据库
      */
     initCardDatabase() {
-        // 功法卡牌
-        const techniques = [
-            {
-                id: 'tech_basic_sword',
-                name: '基础剑法',
-                type: CARD_TYPES.TECHNIQUE,
-                techniqueType: TECHNIQUE_TYPES.ATTACK,
-                rarity: RARITY.COMMON,
-                description: '基础的剑法招式',
-                damage: 10,
-                spiritCost: 5,
-                effects: { attack: 2 },
-                requirements: { level: 1 }
-            },
-            {
-                id: 'tech_fire_ball',
-                name: '火球术',
-                type: CARD_TYPES.TECHNIQUE,
-                techniqueType: TECHNIQUE_TYPES.ATTACK,
-                rarity: RARITY.RARE,
-                description: '凝聚火元素攻击敌人',
-                damage: 25,
-                spiritCost: 15,
-                effects: { attack: 5 },
-                requirements: { level: 5 }
-            },
-            {
-                id: 'tech_ice_shield',
-                name: '冰盾术',
-                type: CARD_TYPES.TECHNIQUE,
-                techniqueType: TECHNIQUE_TYPES.DEFENSE,
-                rarity: RARITY.RARE,
-                description: '召唤冰盾保护自己',
-                effects: { defense: 8, spiritPower: 10 },
-                requirements: { level: 5 }
-            },
-            {
-                id: 'tech_healing_art',
-                name: '疗术',
-                type: CARD_TYPES.TECHNIQUE,
-                techniqueType: TECHNIQUE_TYPES.HEALING,
-                rarity: RARITY.COMMON,
-                description: '恢复生命值',
-                healing: 20,
-                spiritCost: 10,
-                effects: { health: 5 },
-                requirements: { level: 1 }
-            },
-            {
-                id: 'tech_thunder_strike',
-                name: '雷击术',
-                type: CARD_TYPES.TECHNIQUE,
-                techniqueType: TECHNIQUE_TYPES.ATTACK,
-                rarity: RARITY.EPIC,
-                description: '召唤雷电攻击敌人',
-                damage: 50,
-                spiritCost: 30,
-                effects: { attack: 12 },
-                requirements: { level: 10 }
-            }
-        ];
-
-        // 灵药卡牌
-        const medicines = [
-            {
-                id: 'med_health_potion',
-                name: '回血丹',
-                type: CARD_TYPES.MEDICINE,
-                rarity: RARITY.COMMON,
-                description: '恢复30点生命值',
-                consumable: true,
-                stackSize: 10,
-                effects: { health: 30 },
-                requirements: { level: 1 }
-            },
-            {
-                id: 'med_spirit_potion',
-                name: '回灵丹',
-                type: CARD_TYPES.MEDICINE,
-                rarity: RARITY.COMMON,
-                description: '恢复20点灵力',
-                consumable: true,
-                stackSize: 10,
-                effects: { spiritPower: 20 },
-                requirements: { level: 1 }
-            },
-            {
-                id: 'med_cultivation_pill',
-                name: '修为丹',
-                type: CARD_TYPES.MEDICINE,
-                rarity: RARITY.RARE,
-                description: '增加50点修为',
-                consumable: true,
-                stackSize: 5,
-                effects: { cultivation: 50 },
-                requirements: { level: 3 }
-            },
-            {
-                id: 'med_breakthrough_pill',
-                name: '突破丹',
-                type: CARD_TYPES.MEDICINE,
-                rarity: RARITY.EPIC,
-                description: '大幅增加修为，有助于境界突破',
-                consumable: true,
-                stackSize: 3,
-                effects: { cultivation: 200 },
-                requirements: { level: 8 }
-            }
-        ];
-
-        // 装备卡牌
-        const equipments = [
-            {
-                id: 'eq_iron_sword',
-                name: '铁剑',
-                type: CARD_TYPES.EQUIPMENT,
-                equipmentSlot: EQUIPMENT_SLOTS.WEAPON,
-                rarity: RARITY.COMMON,
-                description: '普通的铁制长剑',
-                effects: { attack: 5 },
-                requirements: { level: 1 }
-            },
-            {
-                id: 'eq_steel_sword',
-                name: '钢剑',
-                type: CARD_TYPES.EQUIPMENT,
-                equipmentSlot: EQUIPMENT_SLOTS.WEAPON,
-                rarity: RARITY.RARE,
-                description: '精钢打造的长剑',
-                effects: { attack: 12 },
-                requirements: { level: 5 }
-            },
-            {
-                id: 'eq_spirit_sword',
-                name: '灵剑',
-                type: CARD_TYPES.EQUIPMENT,
-                equipmentSlot: EQUIPMENT_SLOTS.WEAPON,
-                rarity: RARITY.EPIC,
-                description: '蕴含灵力的神剑',
-                effects: { attack: 25, spiritPower: 15 },
-                requirements: { level: 10 }
-            },
-            {
-                id: 'eq_cloth_armor',
-                name: '布甲',
-                type: CARD_TYPES.EQUIPMENT,
-                equipmentSlot: EQUIPMENT_SLOTS.ARMOR,
-                rarity: RARITY.COMMON,
-                description: '简单的布制护甲',
-                effects: { defense: 3 },
-                requirements: { level: 1 }
-            },
-            {
-                id: 'eq_iron_armor',
-                name: '铁甲',
-                type: CARD_TYPES.EQUIPMENT,
-                equipmentSlot: EQUIPMENT_SLOTS.ARMOR,
-                rarity: RARITY.RARE,
-                description: '铁制护甲',
-                effects: { defense: 10, health: 20 },
-                requirements: { level: 5 }
-            },
-            {
-                id: 'eq_spirit_ring',
-                name: '灵戒',
-                type: CARD_TYPES.EQUIPMENT,
-                equipmentSlot: EQUIPMENT_SLOTS.ACCESSORY,
-                rarity: RARITY.EPIC,
-                description: '增加灵力的戒指',
-                effects: { spiritPower: 30, cultivation: 1 },
-                requirements: { level: 8 }
-            }
-        ];
-
-        // 将所有卡牌添加到数据库
-        [...techniques, ...medicines, ...equipments].forEach(cardTemplate => {
-            this.addCardTemplate(cardTemplate);
+        // 使用cards.js中的数据
+        ALL_CARDS.forEach(card => {
+            this.cardDatabase.set(card.id, { ...card, obtainable: true });
         });
+        
+        console.log(`加载了 ${this.cardDatabase.size} 张卡牌到数据库`);
     }
 
     /**

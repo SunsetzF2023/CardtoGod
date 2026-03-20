@@ -95,26 +95,26 @@ class CardToGod {
             case 'c':
             case 'C':
                 // 打开修炼界面
-                this.uiManager.showView('cultivation');
+                this.ui.showView('cultivation');
                 break;
             case 'b':
             case 'B':
                 // 打开战斗界面
-                this.uiManager.showView('battle');
+                this.ui.showView('battle');
                 break;
             case 'p':
             case 'P':
                 // 打开卡包界面
-                this.uiManager.showView('cardpack');
+                this.ui.showView('cardpack');
                 break;
             case 'i':
             case 'I':
                 // 打开背包界面
-                this.uiManager.showView('inventory');
+                this.ui.showView('inventory');
                 break;
             case 'Escape':
                 // 关闭当前模态框
-                this.uiManager.closeModal();
+                this.ui.closeModal();
                 break;
         }
     }
@@ -139,7 +139,7 @@ class CardToGod {
                 if (totalReward > 0) {
                     this.gameEngine.player.addSpiritStones(totalReward);
                     this.addLog(`离线 ${rewardHours} 小时，获得 ${totalReward} 灵石奖励！`, 'success');
-                    this.uiManager.updatePlayerInfo();
+                    this.ui.updatePlayerInfo();
                 }
             }
         }
@@ -156,7 +156,7 @@ class CardToGod {
         setInterval(() => {
             if (this.isInitialized && !document.hidden) {
                 this.gameEngine.update();
-                this.uiManager.update();
+                this.ui.update();
             }
         }, 1000);
 

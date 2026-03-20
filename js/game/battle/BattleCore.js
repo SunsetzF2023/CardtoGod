@@ -3,7 +3,7 @@
  * 负责战斗的基本流程控制
  */
 
-import { BATTLE_TYPES, BATTLE_STATUS, TECHNIQUE_TYPES } from '../data/constants.js';
+import { BATTLE_TYPES, BATTLE_STATUS, TECHNIQUE_TYPES } from '../../data/constants.js';
 
 export class BattleCore {
     constructor(gameEngine) {

@@ -311,6 +311,25 @@ export class Battle {
     }
 
     /**
+     * 获取境界等级
+     */
+    getRealmLevel(realm) {
+        const realmLevels = {
+            '炼气期': 1,
+            '筑基期': 2,
+            '金丹期': 3,
+            '元婴期': 4,
+            '化神期': 5,
+            '炼虚期': 6,
+            '合体期': 7,
+            '大乘期': 8,
+            '渡劫期': 9,
+            '仙人期': 10
+        };
+        return realmLevels[realm] || 1;
+    }
+
+    /**
      * 执行攻击
      */
     executeAttack(attacker, defender, skill) {

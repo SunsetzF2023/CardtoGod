@@ -34,6 +34,8 @@ export class Battle {
      * 开始战斗
      */
     startBattle(player, enemy, battleType = BATTLE_TYPES.PVE) {
+        console.log('Battle.startBattle called with:', { player, enemy, battleType });
+        
         // 创建战斗实例
         this.currentBattle = {
             id: 'battle_' + Date.now(),
@@ -62,11 +64,15 @@ export class Battle {
             }
         };
 
+        console.log('Battle created:', this.currentBattle);
+
         // 确定先手
         this.determineFirstActor();
         
         // 开始战斗
         this.currentBattle.status = BATTLE_STATUS.ONGOING;
+        
+        console.log('Battle status set to ONGOING, currentActor:', this.currentBattle.currentActor);
         
         // 触发战斗开始事件
         this.gameEngine.triggerEvent('battleStarted', {

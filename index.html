@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>卡包修仙 - CardToGod</title>
+    <meta name="description" content="一款基于Web的文字/放置类修仙游戏，通过抽取卡包获得功法、灵药、装备，提升境界，体验修仙之路。">
+    <meta name="keywords" content="修仙游戏,卡牌游戏,放置游戏,文字游戏">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="css/main.css">
+    
+    <!-- 图标字体 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- PWA支持 -->
+    <meta name="theme-color" content="#1f2937">
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="卡包修仙 - CardToGod">
+    <meta property="og:description" content="一款基于Web的文字/放置类修仙游戏">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://sunsetzf2023.github.io/CardtoGod/">
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+    <!-- 游戏主容器 -->
+    <div id="app" class="container mx-auto px-4 py-6 max-w-7xl">
+        <!-- 顶部导航栏 -->
+        <header class="bg-gray-800 rounded-lg p-4 mb-6 shadow-lg">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-2xl font-bold text-yellow-400">
+                        <i class="fas fa-yin-yang"></i> 卡包修仙
+                    </h1>
+                    <span class="text-sm text-gray-400" id="gameVersion">v1.0.0</span>
+                </div>
+                
+                <!-- 玩家信息栏 -->
+                <div class="flex items-center space-x-6">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-gem text-cyan-400"></i>
+                        <span id="spiritStones" class="font-semibold">100</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-layer-group text-purple-400"></i>
+                        <span id="playerRealm" class="font-semibold">炼气期</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-heart text-red-400"></i>
+                        <span id="playerHealth" class="font-semibold">100/100</span>
+                    </div>
+                    <button id="settingsBtn" class="text-gray-400 hover:text-white transition-colors">
+                        <i class="fas fa-cog text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主要游戏区域 -->
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 左侧面板 - 角色信息 -->
+            <section class="lg:col-span-1 space-y-6">
+                <!-- 角色卡片 -->
+                <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
+                    <h2 class="text-xl font-bold mb-4 text-yellow-400">
+                        <i class="fas fa-user"></i> 角色信息
+                    </h2>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">境界</span>
+                            <span id="realmInfo" class="font-semibold">炼气期一层</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">等级</span>
+                            <span id="levelInfo">Lv.1</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">修为</span>
+                            <span id="cultivationInfo">0/1000</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">寿命</span>
+                            <span id="lifespanInfo">100年</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 属性条 -->
+                    <div class="mt-4 space-y-2">
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span>攻击力</span>
+                                <span id="attackValue">10</span>
+                            </div>
+                            <div class="w-full bg-gray-700 rounded-full h-2">
+                                <div id="attackBar" class="bg-red-500 h-2 rounded-full" style="width: 10%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span>防御力</span>
+                                <span id="defenseValue">10</span>
+                            </div>
+                            <div class="w-full bg-gray-700 rounded-full h-2">
+                                <div id="defenseBar" class="bg-blue-500 h-2 rounded-full" style="width: 10%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span>灵力</span>
+                                <span id="spiritValue">50/50</span>
+                            </div>
+                            <div class="w-full bg-gray-700 rounded-full h-2">
+                                <div id="spiritBar" class="bg-purple-500 h-2 rounded-full" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 快捷操作 -->
+                <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
+                    <h2 class="text-xl font-bold mb-4 text-yellow-400">
+                        <i class="fas fa-bolt"></i> 快捷操作
+                    </h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="cultivateBtn" class="bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg transition-colors">
+                            <i class="fas fa-meditation"></i>
+                            <div class="text-sm mt-1">修炼</div>
+                        </button>
+                        <button id="battleBtn" class="bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-lg transition-colors">
+                            <i class="fas fa-sword"></i>
+                            <div class="text-sm mt-1">战斗</div>
+                        </button>
+                        <button id="packBtn" class="bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg transition-colors">
+                            <i class="fas fa-box"></i>
+                            <div class="text-sm mt-1">抽卡</div>
+                        </button>
+                        <button id="inventoryBtn" class="bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg transition-colors">
+                            <i class="fas fa-backpack"></i>
+                            <div class="text-sm mt-1">背包</div>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 中间面板 - 主要游戏内容 -->
+            <section class="lg:col-span-2 space-y-6">
+                <!-- 游戏主界面 -->
+                <div id="mainContent" class="bg-gray-800 rounded-lg p-6 shadow-lg min-h-[400px]">
+                    <!-- 默认显示修仙界面 -->
+                    <div id="cultivationView" class="game-view">
+                        <h2 class="text-2xl font-bold mb-6 text-yellow-400">
+                            <i class="fas fa-mountain"></i> 修仙之路
+                        </h2>
+                        <div class="bg-gray-700 rounded-lg p-6 mb-6">
+                            <h3 class="text-lg font-semibold mb-3">当前状态</h3>
+                            <p class="text-gray-300 mb-4">你是一名刚刚踏入修仙之路的炼气期修士，需要不断修炼提升境界。</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="bg-gray-600 rounded p-4">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-gray-300">修炼速度</span>
+                                        <span class="text-green-400 font-semibold">1修为/秒</span>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-600 rounded p-4">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-gray-300">离线收益</span>
+                                        <span class="text-cyan-400 font-semibold">0灵石</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex space-x-4">
+                            <button id="startCultivationBtn" class="bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg transition-colors flex-1">
+                                <i class="fas fa-play"></i> 开始修炼
+                            </button>
+                            <button id="breakthroughBtn" class="bg-yellow-600 hover:bg-yellow-700 text-white py-3 px-6 rounded-lg transition-colors" disabled>
+                                <i class="fas fa-arrow-up"></i> 境界突破
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 消息日志 -->
+                <div class="bg-gray-800 rounded-lg p-4 shadow-lg">
+                    <h3 class="text-lg font-semibold mb-3 text-yellow-400">
+                        <i class="fas fa-scroll"></i> 修仙日志
+                    </h3>
+                    <div id="messageLog" class="bg-gray-700 rounded p-3 h-32 overflow-y-auto text-sm space-y-1">
+                        <div class="text-gray-300">欢迎来到卡包修仙世界！</div>
+                        <div class="text-green-400">开始你的修仙之路吧...</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 模态框容器 -->
+    <div id="modalContainer"></div>
+
+    <!-- 提示消息容器 -->
+    <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <!-- 加载遮罩 -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-800 rounded-lg p-6 text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+            <p class="text-gray-300">加载中...</p>
+        </div>
+    </div>
+
+    <!-- JavaScript文件 -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

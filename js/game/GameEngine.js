@@ -21,12 +21,29 @@ export class GameEngine {
             currentView: 'cultivation',
             gameTime: 0,
             lastUpdate: Date.now(),
-            turnCount: 0
+            turnCount: 0,
+            currentState: 'idle',         // 游戏状态机: idle, cultivating, battling, resting, exploring
+            stateDuration: 0             // 当前状态持续时间
         };
         
         // 随机事件系统
-        this.randomEventChance = 0.1; // 每回合10%概率触发随机事件
+        this.randomEventChance = 0.1; // 基础10%概率
         this.lastRandomEvent = 0;
+        
+        // 气运影响的事件
+        this.luckEvents = {
+            highLuck: [    // 高气运事件
+                { type: 'fortune_treasure', chance: 0.3, description: '发现神秘宝箱' },
+                { type: 'master_guidance', chance: 0.2, description: '偶遇高人指点' },
+                { type: 'spiritual_enlightenment', chance: 0.25, description: '顿悟突破' },
+                { type: 'rare_herb', chance: 0.25, description: '发现灵药' }
+            ],
+            lowLuck: [     // 低气运事件
+                { type: 'ambushed', chance: 0.4, description: '遭遇埋伏' },
+                { type: 'cursed', chance: 0.3, description: '遭遇诅咒' },
+                { type: 'lost_way', chance: 0.3, description: '迷路了' }
+            ]
+        };
         
         // 事件监听器
         this.eventListeners = new Map();
@@ -149,15 +166,16 @@ export class GameEngine {
         // 更新游戏时间
         this.gameState.gameTime += deltaTime;
         this.gameState.turnCount++;
+        this.gameState.stateDuration++;
+        
+        // 处理状态机
+        this.processStateMachine();
         
         // 处理每回合逻辑
         this.processTurn();
         
-        // 触发随机事件
+        // 触发随机事件（受气运影响）
         this.checkRandomEvents();
-        
-        // 自动修炼
-        this.processAutoCultivation();
         
         // 处理定时器
         this.processTimers();
@@ -166,8 +184,96 @@ export class GameEngine {
         this.triggerEvent('gameUpdate', {
             turnCount: this.gameState.turnCount,
             gameTime: this.gameState.gameTime,
+            currentState: this.gameState.currentState,
             player: this.player
         });
+    }
+
+    /**
+     * 状态机处理
+     */
+    processStateMachine() {
+        const currentState = this.gameState.currentState;
+        const player = this.player;
+        
+        switch (currentState) {
+            case 'idle':
+                // 空闲状态，随机切换到其他状态
+                if (this.gameState.stateDuration > 5) {
+                    this.switchToRandomState();
+                }
+                break;
+                
+            case 'cultivating':
+                // 修炼状态，持续获得修为
+                if (this.gameState.turnCount % 2 === 0) { // 每2秒修炼一次
+                    player.cultivate(1);
+                }
+                // 修炼疲劳，自动切换到休息
+                if (this.gameState.stateDuration > 30) {
+                    this.changeState('resting');
+                    this.addLog('修炼疲劳，需要休息一下', 'info');
+                }
+                break;
+                
+            case 'battling':
+                // 战斗状态，由战斗系统管理
+                break;
+                
+            case 'resting':
+                // 休息状态，恢复体力和灵力
+                if (this.gameState.turnCount % 3 === 0) {
+                    player.restoreSpiritPower(5);
+                    player.heal(3);
+                }
+                // 休息完成，切换到空闲
+                if (this.gameState.stateDuration > 10) {
+                    this.changeState('idle');
+                    this.addLog('休息完成，精神饱满', 'success');
+                }
+                break;
+                
+            case 'exploring':
+                // 探索状态，增加随机事件概率
+                if (this.gameState.stateDuration > 15) {
+                    this.changeState('idle');
+                    this.addLog('探索结束，返回安全区域', 'info');
+                }
+                break;
+        }
+    }
+
+    /**
+     * 切换游戏状态
+     */
+    changeState(newState) {
+        const oldState = this.gameState.currentState;
+        this.gameState.currentState = newState;
+        this.gameState.stateDuration = 0;
+        
+        // 更新玩家状态
+        this.player.gameState = newState;
+        
+        this.triggerEvent('gameStateChanged', { oldState, newState });
+    }
+
+    /**
+     * 随机切换状态
+     */
+    switchToRandomState() {
+        const states = ['cultivating', 'resting', 'exploring'];
+        const weights = [0.4, 0.3, 0.3]; // 权重
+        
+        const random = Math.random();
+        let cumulative = 0;
+        
+        for (let i = 0; i < states.length; i++) {
+            cumulative += weights[i];
+            if (random <= cumulative) {
+                this.changeState(states[i]);
+                break;
+            }
+        }
     }
 
     /**
@@ -196,10 +302,18 @@ export class GameEngine {
     }
 
     /**
-     * 检查随机事件
+     * 检查随机事件 - 受气运影响
      */
     checkRandomEvents() {
-        if (Math.random() < this.randomEventChance && 
+        const player = this.player;
+        const luckBonus = player.luck.bonus.dropRate / 100;
+        const actualChance = this.randomEventChance + luckBonus;
+        
+        // 探索状态下事件概率更高
+        const stateMultiplier = this.gameState.currentState === 'exploring' ? 2.0 : 1.0;
+        const finalChance = Math.min(0.5, actualChance * stateMultiplier);
+        
+        if (Math.random() < finalChance && 
             this.gameState.turnCount - this.lastRandomEvent > 30) {
             
             this.triggerRandomEvent();
@@ -208,19 +322,93 @@ export class GameEngine {
     }
 
     /**
-     * 触发随机事件
+     * 触发随机事件 - 根据气运选择不同事件
      */
     triggerRandomEvent() {
-        const events = [
-            this.eventEncounterBeast,
-            this.eventFindSpiritStone,
-            this.eventEncounterCultivator,
-            this.eventFindTreasure,
-            this.eventEnlightenment
-        ];
+        const player = this.player;
+        const luckValue = player.luck.value;
         
-        const event = events[Math.floor(Math.random() * events.length)];
-        event.call(this);
+        let event;
+        if (luckValue >= 75) {
+            // 高气运：触发好运事件
+            const highLuckEvents = this.luckEvents.highLuck;
+            event = highLuckEvents[Math.floor(Math.random() * highLuckEvents.length)];
+            this.executeHighLuckEvent(event);
+        } else if (luckValue < 25) {
+            // 低气运：触发坏运事件
+            const lowLuckEvents = this.luckEvents.lowLuck;
+            event = lowLuckEvents[Math.floor(Math.random() * lowLuckEvents.length)];
+            this.executeLowLuckEvent(event);
+        } else {
+            // 中等气运：普通随机事件
+            this.triggerNormalRandomEvent();
+        }
+    }
+
+    /**
+     * 执行高气运事件
+     */
+    executeHighLuckEvent(event) {
+        const player = this.player;
+        
+        switch (event.type) {
+            case 'fortune_treasure':
+                const cards = this.cardSystem.generateRandomCards(2, 'rare');
+                cards.forEach(card => player.addCard(card));
+                this.addLog(`🎉 ${event.description}！获得稀有卡牌！`, 'success');
+                player.changeLuck(5); // 增加气运
+                break;
+                
+            case 'master_guidance':
+                const cultivationGain = 100 + Math.floor(Math.random() * 100);
+                player.cultivate(cultivationGain);
+                this.addLog(`🎉 ${event.description}！修为增加${cultivationGain}！`, 'success');
+                player.changeLuck(3);
+                break;
+                
+            case 'spiritual_enlightenment':
+                player.changeLuck(10);
+                player.cultivate(200);
+                this.addLog(`🎉 ${event.description}！气运大增，修为暴涨！`, 'success');
+                break;
+                
+            case 'rare_herb':
+                player.addSpiritStones(100);
+                this.addLog(`🎉 ${event.description}！获得100灵石！`, 'success');
+                player.changeLuck(2);
+                break;
+        }
+        
+        this.triggerEvent('highLuckEvent', event);
+    }
+
+    /**
+     * 执行低气运事件
+     */
+    executeLowLuckEvent(event) {
+        const player = this.player;
+        
+        switch (event.type) {
+            case 'ambushed':
+                const damage = Math.floor(player.stats.maxHealth * 0.2);
+                player.takeDamage(damage);
+                this.addLog(`💀 ${event.description}！受到${damage}点伤害！`, 'error');
+                player.changeLuck(-5);
+                break;
+                
+            case 'cursed':
+                player.changeLuck(-10);
+                this.addLog(`💀 ${event.description}！气运大幅下降！`, 'error');
+                break;
+                
+            case 'lost_way':
+                player.addSpiritStones(-20);
+                this.addLog(`💀 ${event.description}！损失20灵石！`, 'error');
+                player.changeLuck(-3);
+                break;
+        }
+        
+        this.triggerEvent('lowLuckEvent', event);
     }
 
     /**

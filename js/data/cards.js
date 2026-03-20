@@ -21,7 +21,7 @@ export const TECHNIQUE_CARDS = [
         description: '基础的剑法招式，适合初学者',
         damage: 10,
         spiritCost: 5,
-        effects: { attack: 2 },
+        effects: { attack: 5 }, // +5%攻击力
         requirements: { level: 1 },
         equipmentSlot: EQUIPMENT_SLOTS.TECHNIQUE
     },
@@ -34,7 +34,7 @@ export const TECHNIQUE_CARDS = [
         description: '基础的拳脚功夫',
         damage: 8,
         spiritCost: 3,
-        effects: { attack: 1, speed: 1 },
+        effects: { attack: 3, speed: 5 }, // +3%攻击, +5%速度
         requirements: { level: 1 },
         equipmentSlot: EQUIPMENT_SLOTS.TECHNIQUE
     },
@@ -47,7 +47,7 @@ export const TECHNIQUE_CARDS = [
         description: '静心凝神，提升修炼效率',
         healing: 15,
         spiritCost: 10,
-        effects: { cultivation: 2, spiritPower: 10 },
+        effects: { cultivation: 2, spiritPower: 10 }, // +2修为/秒, +10%灵力
         requirements: { level: 1 },
         equipmentSlot: EQUIPMENT_SLOTS.TECHNIQUE
     },
@@ -60,7 +60,7 @@ export const TECHNIQUE_CARDS = [
         description: '凝聚火元素攻击敌人',
         damage: 25,
         spiritCost: 15,
-        effects: { attack: 5, spiritPower: 5 },
+        effects: { attack: 15, spiritPower: 8 }, // +15%攻击, +8%灵力
         requirements: { level: 5 },
         equipmentSlot: EQUIPMENT_SLOTS.TECHNIQUE
     },
@@ -73,7 +73,7 @@ export const TECHNIQUE_CARDS = [
         description: '发射冰箭攻击，有一定几率减速敌人',
         damage: 20,
         spiritCost: 12,
-        effects: { attack: 4, spiritPower: 3 },
+        effects: { attack: 12, spiritPower: 6 }, // +12%攻击, +6%灵力
         requirements: { level: 5 },
         equipmentSlot: EQUIPMENT_SLOTS.TECHNIQUE
     },
@@ -86,7 +86,7 @@ export const TECHNIQUE_CARDS = [
         description: '召唤冰盾保护自己',
         healing: 10,
         spiritCost: 15,
-        effects: { defense: 8, spiritPower: 10 },
+        effects: { defense: 20, spiritPower: 12 }, // +20%防御, +12%灵力
         requirements: { level: 5 },
         equipmentSlot: EQUIPMENT_SLOTS.TECHNIQUE
     },
@@ -98,7 +98,7 @@ export const TECHNIQUE_CARDS = [
         rarity: RARITY.RARE,
         description: '提升身法，增加闪避几率',
         spiritCost: 8,
-        effects: { speed: 5, defense: 2 },
+        effects: { speed: 15, defense: 5 }, // +15%速度, +5%防御
         requirements: { level: 5 },
         equipmentSlot: EQUIPMENT_SLOTS.TECHNIQUE
     },
@@ -110,7 +110,7 @@ export const TECHNIQUE_CARDS = [
         rarity: RARITY.RARE,
         description: '召唤土墙防御',
         spiritCost: 20,
-        effects: { defense: 12, health: 15 },
+        effects: { defense: 25, health: 10 }, // +25%防御, +10%生命
         requirements: { level: 5 },
         equipmentSlot: EQUIPMENT_SLOTS.TECHNIQUE
     },
@@ -123,7 +123,7 @@ export const TECHNIQUE_CARDS = [
         description: '召唤雷电攻击敌人，威力巨大',
         damage: 50,
         spiritCost: 30,
-        effects: { attack: 12, spiritPower: 15 },
+        effects: { attack: 35, spiritPower: 20 }, // +35%攻击, +20%灵力
         requirements: { level: 10 },
         equipmentSlot: EQUIPMENT_SLOTS.TECHNIQUE
     },
@@ -136,7 +136,7 @@ export const TECHNIQUE_CARDS = [
         description: '召唤炎龙进行强力攻击',
         damage: 60,
         spiritCost: 35,
-        effects: { attack: 15, spiritPower: 20 },
+        effects: { attack: 40, spiritPower: 25 }, // +40%攻击, +25%灵力
         requirements: { level: 10 },
         equipmentSlot: EQUIPMENT_SLOTS.TECHNIQUE
     },
@@ -148,7 +148,7 @@ export const TECHNIQUE_CARDS = [
         rarity: RARITY.EPIC,
         description: '修炼金身，大幅提升防御力',
         spiritCost: 25,
-        effects: { defense: 20, health: 30, spiritPower: 10 },
+        effects: { defense: 45, health: 20, spiritPower: 15 }, // +45%防御, +20%生命, +15%灵力
         requirements: { level: 10 },
         equipmentSlot: EQUIPMENT_SLOTS.TECHNIQUE
     },
@@ -161,7 +161,7 @@ export const TECHNIQUE_CARDS = [
         description: '华丽的剑舞，连续攻击敌人',
         damage: 40,
         spiritCost: 28,
-        effects: { attack: 10, speed: 8 },
+        effects: { attack: 30, speed: 20 }, // +30%攻击, +20%速度
         requirements: { level: 10 },
         equipmentSlot: EQUIPMENT_SLOTS.TECHNIQUE
     },
@@ -174,7 +174,7 @@ export const TECHNIQUE_CARDS = [
         description: '传说中的剑法，威力无穷',
         damage: 80,
         spiritCost: 40,
-        effects: { attack: 25, spiritPower: 25, speed: 5 },
+        effects: { attack: 60, spiritPower: 30, speed: 15 }, // +60%攻击, +30%灵力, +15%速度
         requirements: { level: 15 },
         equipmentSlot: EQUIPMENT_SLOTS.TECHNIQUE
     },
@@ -186,7 +186,7 @@ export const TECHNIQUE_CARDS = [
         rarity: RARITY.LEGENDARY,
         description: '修炼仙体，万法不侵',
         spiritCost: 30,
-        effects: { defense: 30, health: 50, spiritPower: 20, cultivation: 5 },
+        effects: { defense: 60, health: 35, spiritPower: 25, cultivation: 5 }, // +60%防御, +35%生命, +25%灵力, +5修为/秒
         requirements: { level: 15 },
         equipmentSlot: EQUIPMENT_SLOTS.TECHNIQUE
     }

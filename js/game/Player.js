@@ -65,6 +65,21 @@ export class Player {
             soundEffects: true
         };
         
+        // 气运系统
+        this.luck = {
+            value: 50,              // 气运值 (0-100)
+            level: '普通',         // 气运等级
+            bonus: {               // 气运加成
+                drawRate: 0,       // 抽卡概率加成 (%)
+                dropRate: 0,       // 掉宝概率加成 (%)
+                cultivation: 0,    // 修炼速度加成 (%)
+                breakthrough: 0    // 突破成功率加成 (%)
+            }
+        };
+        
+        // 游戏状态
+        this.gameState = 'idle';        // 当前状态: idle, cultivating, battling, resting
+        
         // 时间记录
         this.lastLogin = new Date();
         this.offlineRewards = {};
@@ -169,11 +184,26 @@ export class Player {
     }
 
     /**
-     * 获取境界倍率
+     * 获取境界倍率 - 更真实的修仙阶梯感
      */
     getRealmMultiplier() {
-        const realmIndex = Object.values(REALMS).indexOf(this.realm);
-        return 1 + (realmIndex * 0.5) + (this.realmLevel - 1) * 0.1;
+        const realmMultipliers = {
+            [REALMS.QI_REFINEMENT]: 1.0,        // 炼气期：1倍
+            [REALMS.FOUNDATION_ESTABLISHMENT]: 2.5,  // 筑基期：2.5倍
+            [REALMS.GOLDEN_CORE]: 6.0,         // 金丹期：6倍
+            [REALMS.NASCENT_SOUL]: 15.0,       // 元婴期：15倍
+            [REALMS.SOUL_FORMATION]: 35.0,     // 化神期：35倍
+            [REALMS.VOID_TUNING]: 80.0,        // 虚神期：80倍
+            [REALMS.TRIBULATION]: 180.0,       // 渡劫期：180倍
+            [REALMS.MAHAYANA]: 400.0,          // 大乘期：400倍
+            [REALMS.IMMORTAL]: 1000.0          // 仙人期：1000倍
+        };
+        
+        const baseMultiplier = realmMultipliers[this.realm] || 1.0;
+        const levelBonus = (this.realmLevel - 1) * 0.2; // 每层+20%
+        const luckBonus = this.luck.bonus.cultivation / 100; // 气运加成
+        
+        return baseMultiplier * (1 + levelBonus) * (1 + luckBonus);
     }
 
     /**
@@ -309,21 +339,37 @@ export class Player {
     }
 
     /**
-     * 应用卡牌效果
+     * 应用卡牌效果 - 改为百分比加成，后期更爽
      */
     applyCardEffects(card) {
         const effects = card.effects || {};
         
-        // 应用属性加成
-        if (effects.attack) this.stats.attack += effects.attack;
-        if (effects.defense) this.stats.defense += effects.defense;
+        // 应用属性加成（百分比模式）
+        if (effects.attack) {
+            const bonus = Math.floor(this.stats.attack * (effects.attack / 100));
+            this.stats.attack += bonus;
+        }
+        if (effects.defense) {
+            const bonus = Math.floor(this.stats.defense * (effects.defense / 100));
+            this.stats.defense += bonus;
+        }
         if (effects.health) {
-            this.stats.maxHealth += effects.health;
-            this.stats.health += effects.health;
+            const bonus = Math.floor(this.stats.maxHealth * (effects.health / 100));
+            this.stats.maxHealth += bonus;
+            this.stats.health += bonus;
         }
         if (effects.spiritPower) {
-            this.stats.maxSpiritPower += effects.spiritPower;
-            this.stats.spiritPower += effects.spiritPower;
+            const bonus = Math.floor(this.stats.maxSpiritPower * (effects.spiritPower / 100));
+            this.stats.maxSpiritPower += bonus;
+            this.stats.spiritPower += bonus;
+        }
+        
+        // 固定值加成（修为、寿命等）
+        if (effects.cultivation) {
+            this.cultivation += effects.cultivation;
+        }
+        if (effects.lifespan) {
+            this.lifespan += effects.lifespan;
         }
         
         this.triggerEvent('statsChanged', this.stats);
@@ -450,6 +496,81 @@ export class Player {
      */
     isDead() {
         return this.stats.health <= 0;
+    }
+
+    /**
+     * 更新气运系统
+     */
+    updateLuck() {
+        const luckValue = this.luck.value;
+        
+        // 根据气运值确定等级和加成
+        if (luckValue >= 90) {
+            this.luck.level = '天选之子';
+            this.luck.bonus = {
+                drawRate: 20,      // +20%抽卡概率
+                dropRate: 30,      // +30%掉宝概率  
+                cultivation: 25,   // +25%修炼速度
+                breakthrough: 15    // +15%突破成功率
+            };
+        } else if (luckValue >= 75) {
+            this.luck.level = '气运滔天';
+            this.luck.bonus = {
+                drawRate: 15,
+                dropRate: 20,
+                cultivation: 15,
+                breakthrough: 10
+            };
+        } else if (luckValue >= 60) {
+            this.luck.level = '气运亨通';
+            this.luck.bonus = {
+                drawRate: 10,
+                dropRate: 15,
+                cultivation: 10,
+                breakthrough: 5
+            };
+        } else if (luckValue >= 40) {
+            this.luck.level = '普通';
+            this.luck.bonus = {
+                drawRate: 0,
+                dropRate: 0,
+                cultivation: 0,
+                breakthrough: 0
+            };
+        } else if (luckValue >= 25) {
+            this.luck.level = '时运不济';
+            this.luck.bonus = {
+                drawRate: -5,
+                dropRate: -10,
+                cultivation: -5,
+                breakthrough: -5
+            };
+        } else {
+            this.luck.level = '厄运缠身';
+            this.luck.bonus = {
+                drawRate: -15,
+                dropRate: -20,
+                cultivation: -10,
+                breakthrough: -10
+            };
+        }
+        
+        this.triggerEvent('luckChanged', this.luck);
+    }
+
+    /**
+     * 改变气运值
+     */
+    changeLuck(amount) {
+        this.luck.value = Math.max(0, Math.min(100, this.luck.value + amount));
+        this.updateLuck();
+        
+        const level = this.luck.level;
+        if (amount > 0) {
+            this.addLog(`气运提升！当前气运：${level}`, 'success');
+        } else {
+            this.addLog(`气运下降...当前气运：${level}`, 'warning');
+        }
     }
 
     /**

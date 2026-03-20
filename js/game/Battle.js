@@ -192,7 +192,13 @@ export class Battle {
      * 处理战斗回合
      */
     async processBattleTurn() {
+        if (!this.currentBattle) {
+            console.error('Battle: currentBattle is null');
+            return;
+        }
+        
         if (this.currentBattle.status !== BATTLE_STATUS.ONGOING) {
+            console.log('Battle: status not ONGOING, current:', this.currentBattle.status);
             return;
         }
 
@@ -668,7 +674,13 @@ export class Battle {
      * 玩家选择行动
      */
     playerChooseAction(actionType, skillId = null) {
-        if (!this.currentBattle || this.currentBattle.status !== BATTLE_STATUS.ONGOING) {
+        if (!this.currentBattle) {
+            console.error('Battle: currentBattle is null in playerChooseAction');
+            return { success: false, message: '没有进行中的战斗' };
+        }
+        
+        if (this.currentBattle.status !== BATTLE_STATUS.ONGOING) {
+            console.log('Battle: status not ONGOING in playerChooseAction, current:', this.currentBattle.status);
             return { success: false, message: '没有进行中的战斗' };
         }
         

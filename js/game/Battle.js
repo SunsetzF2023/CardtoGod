@@ -397,11 +397,12 @@ export class Battle {
      */
     executeDefenseSkill(caster, skill) {
         caster.isDefending = true;
-            actor.stats.spiritPower -= skill.spiritCost;
+        if (skill && skill.spiritCost > 0) {
+            caster.stats.spiritPower -= skill.spiritCost;
         }
         
-        const actionName = skill ? skill.name : '基础治疗';
-        this.addBattleLog(`${actor.name} 使用 ${actionName} 恢复 ${actualHeal} 点生命值`);
+        const actionName = skill ? skill.name : '基础防御';
+        this.addBattleLog(`${caster.name} 使用 ${actionName}`);
     }
 
     /**
@@ -504,11 +505,43 @@ export class Battle {
             rewards: rewards
         });
 
+        // 连续战斗机制：击败敌人后有概率触发新战斗
+        if (result === 'victory' && winner.type === 'player') {
+            this.triggerNextBattle();
+        }
+
         // 恢复玩家状态
         this.restorePlayerStatus();
 
         // 清理当前战斗
         this.currentBattle = null;
+    }
+
+    /**
+     * 触发下一场战斗（连续战斗）
+     */
+    triggerNextBattle() {
+        const player = this.gameEngine.player;
+        const playerPower = player.getCombatPower();
+
+        // 30%概率触发连续战斗
+        if (Math.random() < 0.3) {
+            // 生成更强的敌人
+            const nextEnemy = this.gameEngine.generateRandomEnemy(ENEMY_TYPES.BEAST);
+            nextEnemy.level = Math.floor(nextEnemy.level * 1.2); // 比20%强
+            nextEnemy.attack = Math.floor(nextEnemy.attack * 1.3);
+            nextEnemy.defense = Math.floor(nextEnemy.defense * 1.25);
+            nextEnemy.health = Math.floor(nextEnemy.health * 1.4);
+
+            setTimeout(() => {
+                this.addBattleLog('⚠️ 新的敌人出现了！比之前的更强！');
+                this.startBattle(player, nextEnemy);
+            }, 2000); // 2秒后新战斗
+
+            this.gameEngine.addLog('连续战斗！更强的敌人来袭！', 'warning');
+        } else {
+            this.gameEngine.addLog('战斗结束，暂时安全', 'success');
+        }
     }
 
     /**

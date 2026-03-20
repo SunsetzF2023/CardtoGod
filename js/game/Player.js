@@ -586,6 +586,25 @@ export class Player {
     }
 
     /**
+     * 获取境界等级数值
+     */
+    getRealmLevel(realm) {
+        const realmMap = {
+            '炼气期': 1,
+            '筑基期': 2,
+            '金丹期': 3,
+            '元婴期': 4,
+            '化神期': 5,
+            '炼虚期': 6,
+            '合体期': 7,
+            '大乘期': 8,
+            '渡劫期': 9,
+            '仙人期': 10
+        };
+        return realmMap[realm] || 1;
+    }
+
+    /**
      * 序列化玩家数据
      */
     serialize() {

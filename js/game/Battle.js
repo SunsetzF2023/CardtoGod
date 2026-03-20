@@ -313,13 +313,59 @@ export class Battle {
     /**
      * 执行攻击
      */
-    executeDefend(actor) {
-        actor.isDefending = true;
-        // 恢复少量灵力
-        const spiritRestore = Math.floor(actor.stats.maxSpiritPower * 0.1);
-        actor.stats.spiritPower = Math.min(actor.stats.spiritPower + spiritRestore, actor.stats.maxSpiritPower);
+    executeAttack(attacker, defender, skill) {
+        const baseDamage = skill ? skill.damage : 5;
+        const attackPower = attacker.stats.attack;
+        const defensePower = defender.stats.defense * (defender.isDefending ? 1.5 : 1);
         
-        this.addBattleLog(`${actor.name} 进入防御姿态，恢复 ${spiritRestore} 点灵力`);
+        // 计算基础伤害
+        let damage = Math.max(1, baseDamage + attackPower - defensePower);
+        
+        // 境界加成：高境界对低境界有额外伤害
+        if (attacker.realm && defender.realm) {
+            const realmDiff = this.getRealmLevel(attacker.realm) - this.getRealmLevel(defender.realm);
+            if (realmDiff > 0) {
+                damage = Math.floor(damage * (1 + realmDiff * 0.2)); // 每高一个大境界+20%伤害
+            }
+        }
+        
+        // 暴击判定
+        const isCritical = Math.random() < this.config.criticalChance;
+        if (isCritical) {
+            damage = Math.floor(damage * 1.5);
+        }
+        
+        // 闪避判定
+        const isEvaded = Math.random() < this.config.evadeChance;
+        if (isEvaded) {
+            this.addBattleLog(`${defender.name} 闪避了 ${attacker.name} 的攻击！`);
+            return;
+        }
+        
+        // 造成伤害
+        const actualDamage = Math.min(damage, defender.stats.health); // 不能超过剩余血量
+        defender.stats.health -= actualDamage;
+        
+        // 消耗灵力
+        if (skill && skill.spiritCost > 0) {
+            attacker.stats.spiritPower -= skill.spiritCost;
+        }
+        
+        // 记录日志
+        const actionName = skill ? skill.name : '普通攻击';
+        const critText = isCritical ? '（暴击！）' : '';
+        this.addBattleLog(
+            `${attacker.name} 使用 ${actionName}${critText} 对 ${defender.name} 造成 ${actualDamage} 点伤害`
+        );
+        
+        // 触发伤害事件，更新UI
+        this.gameEngine.triggerEvent('battleDamage', {
+            attacker: attacker.type,
+            defender: defender.type,
+            damage: actualDamage,
+            remainingHealth: defender.stats.health,
+            maxHealth: defender.stats.maxHealth
+        });
     }
 
     /**
@@ -510,14 +556,17 @@ export class Battle {
         if (result === 'victory' && winner.type === 'player') {
             const enemy = this.currentBattle.participants.enemy.original;
             
-            // 基础奖励
-            rewards.exp = enemy.rewards?.exp || 10;
-            rewards.spiritStones = enemy.rewards?.spiritStones || 5;
+            // 基础奖励 - 改为修为值
+            const baseCultivation = enemy.level * 50; // 每级给50点修为
+            rewards.cultivation = baseCultivation;
+            rewards.exp = Math.floor(baseCultivation * 0.1); // 经验值作为修为的10%
+            rewards.spiritStones = enemy.level * 2; // 每级给2个灵石
             
             // 额外奖励
             const levelDiff = enemy.level - winner.level;
             const bonusMultiplier = Math.max(0.5, Math.min(2, 1 + levelDiff * 0.1));
             
+            rewards.cultivation = Math.floor(rewards.cultivation * bonusMultiplier);
             rewards.exp = Math.floor(rewards.exp * bonusMultiplier);
             rewards.spiritStones = Math.floor(rewards.spiritStones * bonusMultiplier);
             
@@ -528,7 +577,8 @@ export class Battle {
             }
         } else if (result === 'draw') {
             // 平局少量奖励
-            rewards.exp = 2;
+            rewards.cultivation = 5;
+            rewards.exp = 1;
             rewards.spiritStones = 1;
         }
 
@@ -547,6 +597,10 @@ export class Battle {
         
         if (rewards.spiritStones > 0) {
             player.addSpiritStones(rewards.spiritStones);
+        }
+        
+        if (rewards.cultivation > 0) {
+            player.cultivate(rewards.cultivation);
         }
         
         if (rewards.cards.length > 0) {

@@ -124,48 +124,70 @@ class CardToGod {
      */
     async checkOfflineRewards() {
         const lastLogin = localStorage.getItem(STORAGE_KEYS.LAST_LOGIN);
-        if (lastLogin) {
-            const now = Date.now();
-            const timeDiff = now - parseInt(lastLogin);
-            const hoursOffline = Math.floor(timeDiff / (1000 * 60 * 60));
-            
-            if (hoursOffline > 0) {
-                const maxHours = CONSTANTS.GAME_SETTINGS.ECONOMY.MAX_OFFLINE_HOURS;
-                const rewardHours = Math.min(hoursOffline, maxHours);
-                const rewardRate = CONSTANTS.GAME_SETTINGS.ECONOMY.OFFLINE_REWARD_RATE;
-                const baseReward = 10; // 基础每小时灵石奖励
-                const totalReward = Math.floor(baseReward * rewardHours * rewardRate);
-                
-                if (totalReward > 0) {
-                    this.gameEngine.player.addSpiritStones(totalReward);
-                    this.addLog(`离线 ${rewardHours} 小时，获得 ${totalReward} 灵石奖励！`, 'success');
-                    this.ui.updatePlayerInfo();
-                }
-            }
+        
+        const currentTime = Date.now();
+        const offlineHours = (currentTime - parseInt(lastActiveTime)) / (1000 * 60 * 60);
+        
+        if (offlineHours < 0.1) return; // 离线少于6分钟不计算
+        
+        const player = this.gameEngine.player;
+        const realmLevel = player.getRealmLevel(player.realm);
+        
+        // 离线修炼奖励：基于境界和离线时间
+        const cultivationPerHour = realmLevel * 10; // 每小时修为
+        const totalCultivation = Math.floor(offlineHours * cultivationPerHour);
+        
+        // 离线灵石奖励
+        const spiritStonesPerHour = realmLevel * 5;
+        const totalSpiritStones = Math.floor(offlineHours * spiritStonesPerHour);
+        
+        // 应用离线奖励
+        if (totalCultivation > 0) {
+            player.cultivate(totalCultivation);
+            this.addLog(`离线 ${offlineHours.toFixed(1)} 小时，获得 ${totalCultivation} 点修为！`, 'success');
         }
         
-        // 更新最后登录时间
-        localStorage.setItem(STORAGE_KEYS.LAST_LOGIN, Date.now().toString());
+        if (totalSpiritStones > 0) {
+            player.addSpiritStones(totalSpiritStones);
+            this.addLog(`离线 ${offlineHours.toFixed(1)} 小时，获得 ${totalSpiritStones} 枚灵石！`, 'success');
+        }
+        
+        // 更新UI
+        this.ui.updatePlayerInfo();
+        
+        // 更新最后活跃时间
+        localStorage.setItem('lastActiveTime', currentTime.toString());
     }
 
     /**
      * 开始游戏循环
      */
     startGameLoop() {
-        // 游戏主循环 - 每秒更新
+        // 游戏主循环 - 即使失去焦点也继续运行
         setInterval(() => {
-            if (this.isInitialized && !document.hidden) {
+            if (this.isInitialized) {
+                // 移除document.hidden检查，确保后台也能运行
                 this.gameEngine.update();
                 this.ui.update();
             }
-        }, 1000);
-
-        // 自动保存 - 每30秒
-        setInterval(() => {
-            if (this.isInitialized) {
-                this.gameEngine.saveGameData();
+        }, 1000); // 每秒更新一次
+        
+        // 离线模式：记录离开时间
+        window.addEventListener('beforeunload', () => {
+            localStorage.setItem('lastActiveTime', Date.now().toString());
+        });
+        
+        // 页面可见性变化时检查离线奖励
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                this.checkOfflineRewards();
             }
-        }, 30000);
+        });
+        
+        // 页面获得焦点时检查离线奖励
+        window.addEventListener('focus', () => {
+            this.checkOfflineRewards();
+        });
     }
 
     /**

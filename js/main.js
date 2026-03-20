@@ -144,9 +144,10 @@ class CardToGod {
      */
     async checkOfflineRewards() {
         const lastLogin = localStorage.getItem(STORAGE_KEYS.LAST_LOGIN);
+        if (!lastLogin) return;
         
         const currentTime = Date.now();
-        const offlineHours = (currentTime - parseInt(lastActiveTime)) / (1000 * 60 * 60);
+        const offlineHours = (currentTime - parseInt(lastLogin)) / (1000 * 60 * 60);
         
         if (offlineHours < 0.1) return; // 离线少于6分钟不计算
         
@@ -176,7 +177,7 @@ class CardToGod {
         this.ui.updatePlayerInfo();
         
         // 更新最后活跃时间
-        localStorage.setItem('lastActiveTime', currentTime.toString());
+        localStorage.setItem(STORAGE_KEYS.LAST_LOGIN, currentTime.toString());
     }
 
     /**

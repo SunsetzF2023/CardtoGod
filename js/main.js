@@ -62,6 +62,18 @@ class CardToGod {
     }
 
     /**
+     * 绑定按钮事件
+     */
+    bindButton(buttonId, callback) {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.addEventListener('click', callback);
+        } else {
+            console.warn(`Button with id '${buttonId}' not found`);
+        }
+    }
+
+    /**
      * 绑定全局事件
      */
     bindGlobalEvents() {

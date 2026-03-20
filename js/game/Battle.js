@@ -388,6 +388,18 @@ export class Battle {
     }
 
     /**
+     * 执行防御
+     */
+    executeDefend(actor) {
+        actor.isDefending = true;
+        // 恢复少量灵力
+        const spiritRestore = Math.floor(actor.stats.maxSpiritPower * 0.1);
+        actor.stats.spiritPower = Math.min(actor.stats.spiritPower + spiritRestore, actor.stats.maxSpiritPower);
+        
+        this.addBattleLog(`${actor.name} 进入防御姿态，恢复 ${spiritRestore} 点灵力`);
+    }
+
+    /**
      * 执行技能
      */
     executeSkill(caster, target, skill) {

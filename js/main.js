@@ -35,9 +35,9 @@ class CardToGod {
                 const enemy = this.gameEngine.generateRandomEnemy();
                 this.gameEngine.startBattle(enemy);
             });
-            this.bindButton('packBtn', () => this.ui.showShopView());
-            this.bindButton('inventoryBtn', () => this.ui.showInventory());
-            this.bindButton('friendsBtn', () => this.ui.showFriendsView());
+            this.bindButton('packBtn', () => this.ui.showView('shop'));
+            this.bindButton('inventoryBtn', () => this.ui.showView('cards'));
+            this.bindButton('friendsBtn', () => this.ui.showView('friends'));
             
             // 初始化UI管理器
             this.ui = new UIManager(this.gameEngine);

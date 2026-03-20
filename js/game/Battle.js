@@ -335,7 +335,234 @@ export class Battle {
             return this.triggerIntimidateEvent(actor, opponent);
         }
 
+        // 奇遇事件：战斗中的意外发现
+        if (Math.random() < 0.1) {
+            return this.triggerRandomEncounterEvent(actor, opponent);
+        }
+
+        // 抢劫事件：敌人试图抢劫
+        if (actor.type === 'enemy' && healthPercent < 0.4 && Math.random() < 0.2) {
+            return this.triggerRobberyEvent(actor, opponent);
+        }
+
         return null;
+    }
+
+    /**
+     * 触发奇遇事件
+     */
+    triggerRandomEncounterEvent(actor, opponent) {
+        const encounters = [
+            {
+                type: 'spirit_stone',
+                name: '发现灵石矿脉',
+                description: '战斗中发现了隐藏的灵石矿脉！',
+                effect: () => {
+                    const stones = Math.floor(Math.random() * 20) + 10;
+                    this.gameEngine.player.addSpiritStones(stones);
+                    this.addBattleLog(`获得 ${stones} 枚灵石！`);
+                }
+            },
+            {
+                type: 'cultivation_boost',
+                name: '感悟天地',
+                description: '战斗中的顿悟让你修为大增！',
+                effect: () => {
+                    const boost = Math.floor(Math.random() * 50) + 20;
+                    this.gameEngine.player.cultivate(boost);
+                    this.addBattleLog(`感悟获得 ${boost} 点修为！`);
+                }
+            },
+            {
+                type: 'storage_bag',
+                name: '发现储物袋',
+                description: '发现了一个修仙者遗落的储物袋！',
+                effect: () => {
+                    const bag = this.generateRandomStorageBag();
+                    this.addBattleLog(`发现储物袋：${bag.name}！`);
+                    this.processStorageBag(bag);
+                }
+            },
+            {
+                type: 'passerby_help',
+                name: '路人相助',
+                description: '一位路过的修仙者为你提供了帮助！',
+                effect: () => {
+                    const helpType = Math.random();
+                    if (helpType < 0.4) {
+                        // 治疗
+                        const heal = Math.floor(opponent.stats.maxHealth * 0.3);
+                        opponent.stats.health = Math.min(opponent.stats.health + heal, opponent.stats.maxHealth);
+                        this.addBattleLog(`路人帮你治疗了 ${heal} 点生命！`);
+                    } else if (helpType < 0.7) {
+                        // 灵力恢复
+                        const spirit = Math.floor(opponent.stats.maxSpiritPower * 0.4);
+                        opponent.stats.spiritPower = Math.min(opponent.stats.spiritPower + spirit, opponent.stats.maxSpiritPower);
+                        this.addBattleLog(`路人帮你恢复了 ${spirit} 点灵力！`);
+                    } else {
+                        // 临时增益
+                        this.addBattleLog(`路人给了你一颗丹药，攻击力临时提升！`);
+                        opponent.stats.attack = Math.floor(opponent.stats.attack * 1.2);
+                    }
+                }
+            },
+            {
+                type: 'ancient_relic',
+                name: '上古遗迹',
+                description: '战斗中触发了上古遗迹的守护！',
+                effect: () => {
+                    const relics = ['破旧剑柄', '神秘玉简', '残缺丹方', '古老符箓'];
+                    const relic = relics[Math.floor(Math.random() * relics.length)];
+                    this.gameEngine.player.addItem({
+                        id: 'relic_' + Date.now(),
+                        name: relic,
+                        type: 'relic',
+                        rarity: 'rare',
+                        description: '充满神秘力量的上古物品'
+                    });
+                    this.addBattleLog(`获得上古物品：${relic}！`);
+                }
+            }
+        ];
+
+        const encounter = encounters[Math.floor(Math.random() * encounters.length)];
+        this.addBattleLog(`🌟 奇遇：${encounter.name}`);
+        this.addBattleLog(encounter.description);
+        
+        setTimeout(() => {
+            encounter.effect();
+        }, 1000);
+
+        // 奇遇后正常行动
+        return {
+            type: 'attack',
+            skill: actor.skills.find(s => s.id === 'basic_attack'),
+            encounter: true
+        };
+    }
+
+    /**
+     * 触发抢劫事件
+     */
+    triggerRobberyEvent(actor, opponent) {
+        this.addBattleLog(`${actor.name} 试图抢劫你的储物袋！`);
+        
+        const player = this.gameEngine.player;
+        const hasStorageBag = player.inventory?.items?.some(item => item.type === 'storage_bag');
+        
+        if (hasStorageBag && Math.random() < 0.6) {
+            // 抢劫成功
+            const stolenStones = Math.min(player.spiritStones, Math.floor(Math.random() * 30) + 10);
+            player.spiritStones = Math.max(0, player.spiritStones - stolenStones);
+            
+            this.addBattleLog(`💔 悲剧！被抢走了 ${stolenStones} 枚灵石！`);
+            
+            // 激发玩家愤怒
+            opponent.stats.attack = Math.floor(opponent.stats.attack * 1.3);
+            this.addBattleLog(`你被激怒了，攻击力提升！`);
+            
+            return {
+                type: 'attack',
+                skill: actor.skills.find(s => s.id === 'basic_attack'),
+                robbery: true
+            };
+        } else {
+            // 抢劫失败
+            this.addBattleLog(`${actor.name} 抢劫失败，露出破绽！`);
+            actor.stats.defense = Math.floor(actor.stats.defense * 0.8);
+            
+            return {
+                type: 'defend',
+                robbery: false
+            };
+        }
+    }
+
+    /**
+     * 生成随机储物袋
+     */
+    generateRandomStorageBag() {
+        const bagTypes = [
+            { name: '破旧储物袋', quality: 1, value: 20 },
+            { name: '普通储物袋', quality: 2, value: 50 },
+            { name: '精制储物袋', quality: 3, value: 100 },
+            { name: '灵宝储物袋', quality: 4, value: 200 },
+            { name: '仙器储物袋', quality: 5, value: 500 }
+        ];
+        
+        const bag = bagTypes[Math.floor(Math.random() * bagTypes.length)];
+        
+        return {
+            ...bag,
+            contents: this.generateBagContents(bag.quality)
+        };
+    }
+
+    /**
+     * 生成储物袋内容
+     */
+    generateBagContents(quality) {
+        const contents = [];
+        const itemCount = Math.floor(Math.random() * quality) + 1;
+        
+        for (let i = 0; i < itemCount; i++) {
+            const itemType = Math.random();
+            if (itemType < 0.4) {
+                // 灵石
+                contents.push({
+                    type: 'spirit_stones',
+                    amount: Math.floor(Math.random() * quality * 20) + 10
+                });
+            } else if (itemType < 0.7) {
+                // 丹药
+                contents.push({
+                    type: 'pill',
+                    name: '聚灵丹',
+                    effect: 'cultivation',
+                    value: Math.floor(Math.random() * quality * 30) + 20
+                });
+            } else {
+                // 材料
+                contents.push({
+                    type: 'material',
+                    name: '灵草',
+                    rarity: ['common', 'uncommon', 'rare'][Math.floor(Math.random() * 3)],
+                    value: Math.floor(Math.random() * quality * 15) + 5
+                });
+            }
+        }
+        
+        return contents;
+    }
+
+    /**
+     * 处理储物袋
+     */
+    processStorageBag(bag) {
+        const player = this.gameEngine.player;
+        
+        bag.contents.forEach(item => {
+            switch (item.type) {
+                case 'spirit_stones':
+                    player.addSpiritStones(item.amount);
+                    break;
+                case 'pill':
+                    player.cultivate(item.value);
+                    break;
+                case 'material':
+                    player.addItem(item);
+                    break;
+            }
+        });
+        
+        // 添加储物袋本身
+        player.addItem({
+            id: 'bag_' + Date.now(),
+            name: bag.name,
+            type: 'storage_bag',
+            quality: bag.quality,
+            value: bag.value
+        });
     }
 
     /**

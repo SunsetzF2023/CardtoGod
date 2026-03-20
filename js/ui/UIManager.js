@@ -3,12 +3,17 @@
  * 负责管理用户界面、事件绑定、状态更新
  */
 
+import { NPCFriendSystem } from '../game/NPCFriendSystem.js';
+
 export class UIManager {
     constructor(gameEngine) {
         this.gameEngine = gameEngine;
         this.currentView = 'cultivation';
         this.modals = new Map();
         this.toasts = [];
+        
+        // 初始化NPC好友系统
+        this.npcFriendSystem = new NPCFriendSystem(gameEngine);
         
         // UI元素缓存
         this.elements = {};
@@ -332,8 +337,225 @@ export class UIManager {
     }
 
     /**
-     * 显示视图
+     * 显示好友界面
      */
+    showFriendsView() {
+        const content = this.elements.mainContent;
+        if (!content) return;
+
+        const friends = this.npcFriendSystem.getAllFriends();
+        const benefits = this.npcFriendSystem.getFriendBenefits();
+
+        content.innerHTML = `
+            <div class="container mx-auto p-4">
+                <h2 class="text-2xl font-bold mb-6">👥 NPC好友系统</h2>
+                
+                <!-- 好友收益 -->
+                <div class="bg-green-100 p-4 rounded-lg mb-6">
+                    <h3 class="text-lg font-semibold mb-2">🎁 好友收益（每小时）</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="text-center">
+                            <div class="text-2xl">+${benefits.cultivation}</div>
+                            <div class="text-sm text-gray-600">修为</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl">+${benefits.spiritStones}</div>
+                            <div class="text-sm text-gray-600">灵石</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl">+${benefits.pills}</div>
+                            <div class="text-sm text-gray-600">丹药</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl">+${benefits.equipmentBonus}</div>
+                            <div class="text-sm text-gray-600">装备加成</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 好友列表 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    ${friends.map(friend => this.renderFriendCard(friend)).join('')}
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="flex justify-center space-x-4">
+                    <button onclick="game.ui.applyHourlyBenefits()" class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">
+                        🎁 领取好友收益
+                    </button>
+                    <button onclick="game.ui.showView('cultivation')" class="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600">
+                        🔙 返回
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // 绑定好友交互事件
+        this.bindFriendEvents();
+    }
+
+    /**
+     * 渲染好友卡片
+     */
+    renderFriendCard(friend) {
+        const canUnlock = this.npcFriendSystem.canUnlockFriend(friend.id);
+        const friendshipLevel = this.getFriendshipLevelName(friend.friendshipLevel);
+        const lastInteraction = this.formatLastInteraction(friend.lastInteraction);
+
+        return `
+            <div class="bg-white p-4 rounded-lg shadow-md border ${canUnlock ? 'border-yellow-400' : 'border-gray-200'}">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <h3 class="font-bold text-lg">${friend.name}</h3>
+                        <p class="text-sm text-gray-600">${friend.title}</p>
+                        <p class="text-xs text-gray-500">境界：${friend.realm}</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm font-semibold ${this.getFriendshipLevelColor(friend.friendshipLevel)}">
+                            ${friendshipLevel}
+                        </div>
+                        <div class="text-xs text-gray-500">${lastInteraction}</div>
+                    </div>
+                </div>
+                
+                <div class="text-sm text-gray-700 mb-3">
+                    <span class="font-medium">性格：</span>${this.getPersonalityEmoji(friend.personality)} ${friend.personality}
+                </div>
+                
+                <div class="text-xs text-gray-600 mb-3">
+                    <div>🎁 修为：+${friend.benefits.cultivation}/h</div>
+                    <div>💎 灵石：+${friend.benefits.spiritStones}/h</div>
+                    ${friend.benefits.pills ? `<div>💊 丹药：+${friend.benefits.pills}/h</div>` : ''}
+                    ${friend.benefits.equipmentBonus ? `<div>⚔️ 装备：+${friend.benefits.equipmentBonus}/h</div>` : ''}
+                </div>
+                
+                <div class="flex space-x-2">
+                    ${canUnlock ? `
+                        <button onclick="game.ui.unlockFriend('${friend.id}')" class="bg-yellow-500 text-white px-3 py-1 rounded text-sm hover:bg-yellow-600">
+                            🔓 解锁
+                        </button>
+                    ` : `
+                        <button onclick="game.ui.interactWithFriend('${friend.id}')" class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">
+                            💬 互动
+                        </button>
+                    `}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * 获取友好度等级名称
+     */
+    getFriendshipLevelName(level) {
+        const levels = {
+            0: '陌生人',
+            1: '相识',
+            2: '朋友',
+            3: '好友',
+            4: '挚友',
+            5: '兄弟'
+        };
+        return levels[level] || '陌生人';
+    }
+
+    /**
+     * 获取友好度等级颜色
+     */
+    getFriendshipLevelColor(level) {
+        const colors = {
+            0: 'text-gray-500',
+            1: 'text-blue-500',
+            2: 'text-green-500',
+            3: 'text-purple-500',
+            4: 'text-orange-500',
+            5: 'text-red-500'
+        };
+        return colors[level] || 'text-gray-500';
+    }
+
+    /**
+     * 获取性格表情
+     */
+    getPersonalityEmoji(personality) {
+        const emojis = {
+            wise: '🧓',
+            caring: '💝',
+            greedy: '💰',
+            mysterious: '🌙',
+            honest: '🔨'
+        };
+        return emojis[personality] || '👤';
+    }
+
+    /**
+     * 格式化最后互动时间
+     */
+    formatLastInteraction(timestamp) {
+        const now = Date.now();
+        const diff = now - timestamp;
+        const hours = Math.floor(diff / 3600000);
+        const days = Math.floor(hours / 24);
+
+        if (days > 0) {
+            return `${days}天前`;
+        } else if (hours > 0) {
+            return `${hours}小时前`;
+        } else {
+            return '刚刚';
+        }
+    }
+
+    /**
+     * 绑定好友事件
+     */
+    bindFriendEvents() {
+        // 这里可以绑定具体的好友交互事件
+    }
+
+    /**
+     * 解锁好友
+     */
+    unlockFriend(friendId) {
+        const success = this.npcFriendSystem.unlockFriend(friendId);
+        if (success) {
+            this.showFriendsView(); // 刷新界面
+        } else {
+            this.showToast('解锁失败', 'error');
+        }
+    }
+
+    /**
+     * 与好友互动
+     */
+    interactWithFriend(friendId) {
+        const result = this.npcFriendSystem.interactWithFriend(friendId);
+        
+        if (result.success) {
+            const interaction = result.interaction;
+            this.showToast(interaction.text, 'success');
+            
+            // 执行效果
+            setTimeout(() => {
+                const effectText = interaction.effect();
+                this.showToast(effectText, 'info');
+                this.updatePlayerInfo();
+                this.showFriendsView(); // 刷新界面
+            }, 1000);
+        } else {
+            this.showToast(result.message, 'warning');
+        }
+    }
+
+    /**
+     * 应用好友收益
+     */
+    applyHourlyBenefits() {
+        this.npcFriendSystem.applyHourlyBenefits();
+        this.showToast('好友收益已发放！', 'success');
+        this.updatePlayerInfo();
+        this.showFriendsView(); // 刷新界面
+    }
     showView(viewName) {
         this.currentView = viewName;
         this.gameEngine.switchView(viewName);
@@ -345,17 +567,20 @@ export class UIManager {
             case 'cultivation':
                 this.showCultivationView();
                 break;
+            case 'cards':
+                this.showCardsView();
+                break;
             case 'battle':
-                this.showBattlePreparationView();
+                this.showBattleView();
                 break;
-            case 'cardpack':
-                this.showCardPackView();
+            case 'shop':
+                this.showShopView();
                 break;
-            case 'inventory':
-                this.showInventoryView();
+            case 'friends':
+                this.showFriendsView();
                 break;
             default:
-                console.warn(`未知视图: ${viewName}`);
+                content.innerHTML = '<p>未知视图</p>';
         }
     }
 

@@ -28,6 +28,13 @@ class CardToGod {
             this.gameEngine = new GameEngine();
             await this.gameEngine.init();
             
+            // 绑定快捷操作按钮
+            this.bindButton('cultivateBtn', () => this.gameEngine.cultivate());
+            this.bindButton('battleBtn', () => this.gameEngine.startBattle());
+            this.bindButton('packBtn', () => this.ui.showShopView());
+            this.bindButton('inventoryBtn', () => this.ui.showInventory());
+            this.bindButton('friendsBtn', () => this.ui.showFriendsView());
+            
             // 初始化UI管理器
             this.ui = new UIManager(this.gameEngine);
             await this.ui.init();

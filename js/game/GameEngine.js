@@ -606,6 +606,46 @@ export class GameEngine {
     }
 
     /**
+     * 修炼
+     */
+    cultivate() {
+        const result = this.player.cultivate(5);
+        this.addLog(`修炼获得 ${result.gain} 点修为！`, 'success');
+        this.triggerEvent('cultivated', { gain: result.gain });
+    }
+
+    /**
+     * 生成随机敌人
+     */
+    generateRandomEnemy() {
+        const enemyTypes = ['野兽', '邪修', '妖兽', '散修'];
+        const type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+        
+        const level = Math.max(1, this.player.level + Math.floor(Math.random() * 3) - 1);
+        const realm = this.player.realm;
+        
+        return {
+            id: 'enemy_' + Date.now(),
+            name: type + Math.floor(Math.random() * 100),
+            type: type,
+            level: level,
+            realm: realm,
+            stats: {
+                attack: Math.floor(10 + level * 2),
+                defense: Math.floor(8 + level * 1.5),
+                speed: Math.floor(5 + level),
+                health: Math.floor(50 + level * 10),
+                maxHealth: Math.floor(50 + level * 10),
+                spiritPower: Math.floor(20 + level * 5),
+                maxSpiritPower: Math.floor(20 + level * 5)
+            },
+            skills: [
+                { id: 'basic_attack', name: '普通攻击', damage: 5, spiritCost: 0, type: 'attack' }
+            ]
+        };
+    }
+
+    /**
      * 开始战斗
      */
     startBattle(enemy) {

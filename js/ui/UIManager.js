@@ -854,6 +854,13 @@ export class UIManager {
     }
 
     /**
+     * 显示商店视图
+     */
+    showShopView() {
+        this.showCardPackView();
+    }
+
+    /**
      * 显示卡包视图
      */
     showCardPackView() {

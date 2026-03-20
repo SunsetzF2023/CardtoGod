@@ -397,31 +397,6 @@ export class Battle {
      */
     executeDefenseSkill(caster, skill) {
         caster.isDefending = true;
-        // 可以添加额外的防御效果
-        this.addBattleLog(`${caster.name} 使用 ${skill.name} 加强防御`);
-    }
-
-    /**
-     * 执行治疗技能
-     */
-    executeHealingSkill(caster, skill) {
-        const healAmount = skill.healing || 20;
-        const actualHeal = Math.min(healAmount, caster.stats.maxHealth - caster.stats.health);
-        caster.stats.health += actualHeal;
-        
-        this.addBattleLog(`${caster.name} 使用 ${skill.name} 恢复 ${actualHeal} 点生命值`);
-    }
-
-    /**
-     * 执行治疗
-     */
-    executeHeal(actor, skill) {
-        const healAmount = skill ? skill.healing : 20;
-        const actualHeal = Math.min(healAmount, actor.stats.maxHealth - actor.stats.health);
-        actor.stats.health += actualHeal;
-        
-        // 消耗灵力
-        if (skill && skill.spiritCost > 0) {
             actor.stats.spiritPower -= skill.spiritCost;
         }
         

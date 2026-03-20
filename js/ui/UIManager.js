@@ -892,8 +892,53 @@ export class UIManager {
         if (result.success) {
             this.showCardDrawModal(result.cards);
             this.showView('cardpack');
+            
+            // 显示获得卡牌的属性提升
+            this.showCardEffectsToast(result.cards);
+            
+            // 立即更新玩家信息显示
+            this.updatePlayerInfo();
         } else {
             this.showToast(result.message, 'error');
+        }
+    }
+
+    /**
+     * 显示卡牌属性提升提示
+     */
+    showCardEffectsToast(cards) {
+        const player = this.gameEngine.player;
+        let totalEffects = {};
+        
+        // 计算总属性提升
+        cards.forEach(card => {
+            if (card.effects) {
+                Object.entries(card.effects).forEach(([stat, value]) => {
+                    if (!totalEffects[stat]) totalEffects[stat] = 0;
+                    totalEffects[stat] += value;
+                });
+            }
+        });
+        
+        // 生成属性提升消息
+        const messages = [];
+        Object.entries(totalEffects).forEach(([stat, value]) => {
+            if (value > 0) {
+                const statNames = {
+                    attack: '攻击力',
+                    defense: '防御力',
+                    health: '生命值',
+                    spiritPower: '灵力',
+                    cultivation: '修为',
+                    speed: '速度',
+                    lifespan: '寿命'
+                };
+                messages.push(`${statNames[stat] || stat}+${value}`);
+            }
+        });
+        
+        if (messages.length > 0) {
+            this.showToast(`获得卡牌提升：${messages.join(', ')}`, 'success');
         }
     }
 

@@ -496,32 +496,76 @@ export class GameEngine {
      * 生成随机敌人
      */
     generateRandomEnemy(type) {
+        const player = this.player;
+        const playerPower = player.getCombatPower();
+        
+        // 根据玩家战斗力动态调整敌人属性
+        const powerMultiplier = 0.8 + Math.random() * 0.4; // 0.8-1.2倍玩家战力
+        
         const enemyTemplates = {
             [ENEMY_TYPES.BEAST]: [
-                { name: '野狼', level: 1, attack: 8, defense: 5, health: 30 },
-                { name: '野猪', level: 2, attack: 12, defense: 8, health: 50 },
-                { name: '老虎', level: 3, attack: 18, defense: 12, health: 80 }
+                { 
+                    name: '野狼', 
+                    baseLevel: 1, 
+                    baseAttack: 8, 
+                    baseDefense: 5, 
+                    baseHealth: 30 
+                },
+                { 
+                    name: '野猪', 
+                    baseLevel: 2, 
+                    baseAttack: 12, 
+                    baseDefense: 8, 
+                    baseHealth: 50 
+                },
+                { 
+                    name: '老虎', 
+                    baseLevel: 3, 
+                    baseAttack: 18, 
+                    baseDefense: 12, 
+                    baseHealth: 80 
+                }
             ],
             [ENEMY_TYPES.CULTIVATOR]: [
-                { name: '炼气修士', level: 2, attack: 15, defense: 10, health: 60 },
-                { name: '筑基修士', level: 5, attack: 25, defense: 20, health: 120 }
+                { 
+                    name: '炼气修士', 
+                    baseLevel: 2, 
+                    baseAttack: 15, 
+                    baseDefense: 10, 
+                    baseHealth: 60 
+                },
+                { 
+                    name: '筑基修士', 
+                    baseLevel: 5, 
+                    baseAttack: 25, 
+                    baseDefense: 20, 
+                    baseHealth: 120 
+                }
             ]
         };
         
         const templates = enemyTemplates[type] || enemyTemplates[ENEMY_TYPES.BEAST];
         const template = templates[Math.floor(Math.random() * templates.length)];
         
+        // 根据玩家战力动态计算敌人属性
+        const adjustedLevel = Math.max(1, Math.floor(template.baseLevel * powerMultiplier));
+        const levelMultiplier = 1 + (adjustedLevel - 1) * 0.2; // 每级+20%属性
+        
         return {
             id: 'enemy_' + Date.now(),
             type: type,
-            ...template,
-            maxHealth: template.health,
-            spiritPower: 30,
-            maxSpiritPower: 30,
-            speed: 10,
+            name: template.name,
+            level: adjustedLevel,
+            attack: Math.floor(template.baseAttack * levelMultiplier),
+            defense: Math.floor(template.baseDefense * levelMultiplier),
+            health: Math.floor(template.baseHealth * levelMultiplier),
+            maxHealth: Math.floor(template.baseHealth * levelMultiplier),
+            spiritPower: Math.floor(30 * levelMultiplier),
+            maxSpiritPower: Math.floor(30 * levelMultiplier),
+            speed: Math.floor(10 * levelMultiplier),
             rewards: {
-                exp: template.level * 10,
-                spiritStones: template.level * 5
+                exp: Math.floor(adjustedLevel * 10 * powerMultiplier),
+                spiritStones: Math.floor(adjustedLevel * 5 * powerMultiplier)
             }
         };
     }

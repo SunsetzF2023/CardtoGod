@@ -70,7 +70,8 @@ export class GameEngine {
             this.battleSystem = new Battle(this);
             await this.battleSystem.init();
             
-            // 初始化UI管理器
+            // 初始化UI管理器（延迟导入避免循环依赖）
+            const { UIManager } = await import('../ui/UIManager.js');
             this.uiManager = new UIManager(this);
             await this.uiManager.init();
             

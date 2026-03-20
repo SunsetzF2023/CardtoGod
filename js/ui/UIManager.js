@@ -73,6 +73,10 @@ export class UIManager {
         this.elements.mainContent = document.getElementById('mainContent');
         this.elements.messageLog = document.getElementById('messageLog');
         
+        // 气运信息
+        this.elements.playerLuck = document.getElementById('playerLuck');
+        this.elements.luckInfo = document.getElementById('luckInfo');
+        
         // 容器
         this.elements.modalContainer = document.getElementById('modalContainer');
         this.elements.toastContainer = document.getElementById('toastContainer');
@@ -161,6 +165,11 @@ export class UIManager {
             this.updateInventoryInfo();
         });
         
+        // 气运变化
+        this.gameEngine.addEventListener('luckChanged', (luck) => {
+            this.updateLuckInfo();
+        });
+        
         // 战斗开始
         this.gameEngine.addEventListener('battleStarted', (data) => {
             this.showBattleView(data.enemy);
@@ -229,6 +238,9 @@ export class UIManager {
         
         // 属性
         this.updatePlayerStats(player.stats);
+        
+        // 气运
+        this.updateLuckInfo();
     }
 
     /**
@@ -273,6 +285,21 @@ export class UIManager {
     updateInventoryInfo() {
         // 这里可以更新背包UI
         // 暂时留空，后续实现
+    }
+
+    /**
+     * 更新气运信息
+     */
+    updateLuckInfo() {
+        const player = this.gameEngine.player;
+        const luck = player.luck;
+        
+        if (this.elements.playerLuck) {
+            this.elements.playerLuck.textContent = `气运: ${luck.level}`;
+        }
+        if (this.elements.luckInfo) {
+            this.elements.luckInfo.textContent = luck.value;
+        }
     }
 
     /**

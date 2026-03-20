@@ -70,8 +70,15 @@ export class GameEngine {
             this.battleSystem = new Battle(this);
             await this.battleSystem.init();
             
+            // 初始化UI管理器
+            this.uiManager = new UIManager(this);
+            await this.uiManager.init();
+            
             // 绑定玩家事件
             this.bindPlayerEvents();
+            
+            // 初始化气运系统
+            this.player.updateLuck();
             
             // 启动游戏
             this.startGame();
@@ -118,6 +125,10 @@ export class GameEngine {
         this.player.addEventListener('realmBreakthrough', (data) => {
             this.addLog(`恭喜突破到 ${data.newRealm}！`, 'success');
             this.triggerEvent('playerRealmBreakthrough', data);
+            // 立即更新UI
+            if (this.uiManager) {
+                this.uiManager.updatePlayerInfo();
+            }
         });
         
         this.player.addEventListener('spiritStonesGained', (data) => {
@@ -343,6 +354,22 @@ export class GameEngine {
             // 中等气运：普通随机事件
             this.triggerNormalRandomEvent();
         }
+    }
+
+    /**
+     * 普通随机事件
+     */
+    triggerNormalRandomEvent() {
+        const events = [
+            this.eventEncounterBeast,
+            this.eventFindSpiritStone,
+            this.eventEncounterCultivator,
+            this.eventFindTreasure,
+            this.eventEnlightenment
+        ];
+        
+        const event = events[Math.floor(Math.random() * events.length)];
+        event.call(this);
     }
 
     /**

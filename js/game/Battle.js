@@ -215,6 +215,7 @@ export class Battle {
         }
 
         this.currentBattle.currentTurn++;
+        console.log(`Battle: Turn ${this.currentBattle.currentTurn}, currentActor: ${this.currentBattle.currentActor}`);
         
         // 检查回合限制
         if (this.currentBattle.currentTurn > this.config.maxTurns) {
@@ -224,9 +225,8 @@ export class Battle {
 
         const actor = this.getCurrentActor();
         const opponent = this.getOpponent();
-
-        // 处理状态效果
-        this.processStatusEffects(actor);
+        
+        console.log(`Battle: Actor is ${actor.name}, opponent is ${opponent.name}`);
 
         // 检查是否有人死亡
         if (actor.stats.health <= 0 || opponent.stats.health <= 0) {
@@ -234,7 +234,14 @@ export class Battle {
             return;
         }
 
-        // 执行行动
+        // 如果是玩家回合，等待玩家选择行动
+        if (actor.type === 'player') {
+            console.log('Battle: Player turn, waiting for player action');
+            return;
+        }
+
+        // 敌人自动行动
+        console.log('Battle: Enemy turn, executing AI action');
         await this.executeAction(actor, opponent);
 
         // 切换行动者

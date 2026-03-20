@@ -313,54 +313,6 @@ export class Battle {
     /**
      * 执行攻击
      */
-    executeAttack(attacker, defender, skill) {
-        const baseDamage = skill ? skill.damage : 5;
-        const attackPower = attacker.stats.attack;
-        const defensePower = defender.stats.defense * (defender.isDefending ? 1.5 : 1);
-        
-        // 计算基础伤害
-        let damage = Math.max(1, baseDamage + attackPower - defensePower);
-        
-        // 暴击判定
-        const isCritical = Math.random() < this.config.criticalChance;
-        if (isCritical) {
-            damage = Math.floor(damage * 1.5);
-        }
-        
-        // 闪避判定
-        const isEvaded = Math.random() < this.config.evadeChance;
-        if (isEvaded) {
-            this.addBattleLog(`${defender.name} 闪避了 ${attacker.name} 的攻击！`);
-            return;
-        }
-        
-        // 造成伤害
-        defender.stats.health -= damage;
-        
-        // 消耗灵力
-        if (skill && skill.spiritCost > 0) {
-            attacker.stats.spiritPower -= skill.spiritCost;
-        }
-        
-        // 记录日志
-        const actionName = skill ? skill.name : '普通攻击';
-        const critText = isCritical ? '（暴击！）' : '';
-        this.addBattleLog(
-            `${attacker.name} 使用 ${actionName}${critText} 对 ${defender.name} 造成 ${damage} 点伤害`
-        );
-
-        // 触发伤害事件
-        this.gameEngine.triggerEvent('battleDamage', {
-            attacker: attacker.type,
-            defender: defender.type,
-            damage: damage,
-            isCritical: isCritical
-        });
-    }
-
-    /**
-     * 执行防御
-     */
     executeDefend(actor) {
         actor.isDefending = true;
         // 恢复少量灵力

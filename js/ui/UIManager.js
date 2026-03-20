@@ -170,6 +170,11 @@ export class UIManager {
             this.updateLuckInfo();
         });
         
+        // 战斗伤害变化
+        this.gameEngine.addEventListener('battleDamage', (data) => {
+            this.updateBattleHealth(data);
+        });
+        
         // 战斗开始
         this.gameEngine.addEventListener('battleStarted', (data) => {
             this.showBattleView(data.enemy);
@@ -300,6 +305,30 @@ export class UIManager {
         if (this.elements.luckInfo) {
             this.elements.luckInfo.textContent = luck.value;
         }
+    }
+
+    /**
+     * 更新战斗血量显示
+     */
+    updateBattleHealth(data) {
+        // 更新玩家血量
+        if (data.defender === 'player') {
+            const playerHealth = document.getElementById('playerBattleHealth');
+            if (playerHealth) {
+                playerHealth.textContent = `${data.remainingHealth}/${data.maxHealth}`;
+            }
+        }
+        
+        // 更新敌人血量
+        if (data.defender === 'enemy') {
+            const enemyHealth = document.getElementById('enemyBattleHealth');
+            if (enemyHealth) {
+                enemyHealth.textContent = `${data.remainingHealth}/${data.maxHealth}`;
+            }
+        }
+        
+        // 更新主界面的玩家信息
+        this.updatePlayerInfo();
     }
 
     /**

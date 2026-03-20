@@ -267,7 +267,7 @@ export class Battle {
     }
 
     /**
-     * 选择行动
+     * 选择行动 - 增强AI逻辑
      */
     selectAction(actor, opponent) {
         // 如果是玩家，返回默认攻击（实际游戏中应该由玩家选择）
@@ -278,11 +278,191 @@ export class Battle {
             };
         }
 
-        // AI逻辑
+        // 增强AI逻辑
         const healthPercent = actor.stats.health / actor.stats.maxHealth;
         const spiritPercent = actor.stats.spiritPower / actor.stats.maxSpiritPower;
+        const healthDiff = actor.stats.health - opponent.stats.health;
+        const realmDiff = this.getRealmLevel(actor.realm || '炼气期') - this.getRealmLevel(opponent.realm || '炼气期');
 
-        // 血量低时优先治疗或防御
+        // AI策略选择
+        const strategy = this.selectAIStrategy(actor, opponent, healthPercent, spiritPercent, healthDiff, realmDiff);
+        
+        switch (strategy) {
+            case 'aggressive':
+                return this.selectAggressiveAction(actor, opponent);
+            case 'defensive':
+                return this.selectDefensiveAction(actor, opponent);
+            case 'tactical':
+                return this.selectTacticalAction(actor, opponent);
+            case 'desperate':
+                return this.selectDesperateAction(actor, opponent);
+            default:
+                return this.selectBalancedAction(actor, opponent);
+        }
+    }
+
+    /**
+     * 选择AI策略
+     */
+    selectAIStrategy(actor, opponent, healthPercent, spiritPercent, healthDiff, realmDiff) {
+        // 绝望状态：血量极低
+        if (healthPercent < 0.2) {
+            return 'desperate';
+        }
+        
+        // 激进策略：血量优势或境界压制
+        if (healthDiff > 30 || realmDiff > 1) {
+            return Math.random() < 0.7 ? 'aggressive' : 'tactical';
+        }
+        
+        // 防御策略：血量劣势或被境界压制
+        if (healthDiff < -30 || realmDiff < -1) {
+            return Math.random() < 0.6 ? 'defensive' : 'tactical';
+        }
+        
+        // 战术策略：灵力充足且血量适中
+        if (spiritPercent > 0.5 && healthPercent > 0.4 && healthPercent < 0.8) {
+            return 'tactical';
+        }
+        
+        // 平衡策略：默认情况
+        return 'balanced';
+    }
+
+    /**
+     * 激进策略
+     */
+    selectAggressiveAction(actor, opponent) {
+        const attackSkills = actor.skills.filter(s => 
+            s.type === TECHNIQUE_TYPES.ATTACK && 
+            s.spiritCost <= actor.stats.spiritPower
+        );
+        
+        // 优先使用高伤害技能
+        if (attackSkills.length > 0 && Math.random() < 0.8) {
+            const highDamageSkill = attackSkills.reduce((prev, current) => 
+                (prev.damage > current.damage) ? prev : current
+            );
+            return { type: 'skill', skill: highDamageSkill };
+        }
+        
+        return {
+            type: 'attack',
+            skill: actor.skills.find(s => s.id === 'basic_attack')
+        };
+    }
+
+    /**
+     * 防御策略
+     */
+    selectDefensiveAction(actor, opponent) {
+        const healthPercent = actor.stats.health / actor.stats.maxHealth;
+        const spiritPercent = actor.stats.spiritPower / actor.stats.maxSpiritPower;
+        
+        // 血量低时优先治疗
+        if (healthPercent < 0.4) {
+            const healSkill = actor.skills.find(s => s.type === TECHNIQUE_TYPES.HEALING);
+            if (healSkill && spiritPercent >= healSkill.spiritCost) {
+                return { type: 'heal', skill: healSkill };
+            }
+        }
+        
+        // 使用防御技能
+        const defenseSkills = actor.skills.filter(s => 
+            s.type === TECHNIQUE_TYPES.DEFENSE && 
+            s.spiritCost <= actor.stats.spiritPower
+        );
+        
+        if (defenseSkills.length > 0 && Math.random() < 0.7) {
+            return { type: 'skill', skill: defenseSkills[0] };
+        }
+        
+        return { type: 'defend' };
+    }
+
+    /**
+     * 战术策略
+     */
+    selectTacticalAction(actor, opponent) {
+        const spiritPercent = actor.stats.spiritPower / actor.stats.maxSpiritPower;
+        const opponentHealthPercent = opponent.stats.health / opponent.stats.maxHealth;
+        
+        // 对手血量低时，使用终结技能
+        if (opponentHealthPercent < 0.3 && spiritPercent > 0.6) {
+            const powerfulSkills = actor.skills.filter(s => 
+                s.type === TECHNIQUE_TYPES.ATTACK && 
+                s.damage > 10 && 
+                s.spiritCost <= actor.stats.spiritPower
+            );
+            
+            if (powerfulSkills.length > 0) {
+                return { type: 'skill', skill: powerfulSkills[0] };
+            }
+        }
+        
+        // 根据灵力情况选择技能
+        if (spiritPercent > 0.7) {
+            // 灵力充足时使用技能
+            const availableSkills = actor.skills.filter(s => 
+                s.spiritCost <= actor.stats.spiritPower && 
+                s.id !== 'basic_attack'
+            );
+            
+            if (availableSkills.length > 0) {
+                const skill = availableSkills[Math.floor(Math.random() * availableSkills.length)];
+                return { type: 'skill', skill: skill };
+            }
+        }
+        
+        // 默认攻击
+        return {
+            type: 'attack',
+            skill: actor.skills.find(s => s.id === 'basic_attack')
+        };
+    }
+
+    /**
+     * 绝望策略
+     */
+    selectDesperateAction(actor, opponent) {
+        const healthPercent = actor.stats.health / actor.stats.maxHealth;
+        const spiritPercent = actor.stats.spiritPower / actor.stats.maxSpiritPower;
+        
+        // 最后的治疗机会
+        if (healthPercent < 0.15) {
+            const healSkill = actor.skills.find(s => s.type === TECHNIQUE_TYPES.HEALING);
+            if (healSkill && spiritPercent >= healSkill.spiritCost) {
+                return { type: 'heal', skill: healSkill };
+            }
+        }
+        
+        // 赌博式攻击：使用最强技能
+        const allSkills = actor.skills.filter(s => s.spiritCost <= actor.stats.spiritPower);
+        if (allSkills.length > 0) {
+            const strongestSkill = allSkills.reduce((prev, current) => {
+                const prevPower = prev.damage || prev.healing || 0;
+                const currentPower = current.damage || current.healing || 0;
+                return currentPower > prevPower ? current : prev;
+            });
+            
+            return { type: 'skill', skill: strongestSkill };
+        }
+        
+        // 最后的普通攻击
+        return {
+            type: 'attack',
+            skill: actor.skills.find(s => s.id === 'basic_attack')
+        };
+    }
+
+    /**
+     * 平衡策略
+     */
+    selectBalancedAction(actor, opponent) {
+        const healthPercent = actor.stats.health / actor.stats.maxHealth;
+        const spiritPercent = actor.stats.spiritPower / actor.stats.maxSpiritPower;
+        
+        // 血量低时治疗或防御
         if (healthPercent < 0.3) {
             const healSkill = actor.skills.find(s => s.type === TECHNIQUE_TYPES.HEALING);
             if (healSkill && spiritPercent >= 0.3) {

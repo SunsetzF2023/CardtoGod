@@ -31,7 +31,10 @@ class CardToGod {
             
             // 绑定快捷操作按钮
             this.bindButton('cultivateBtn', () => this.gameEngine.cultivate());
-            this.bindButton('battleBtn', () => this.gameEngine.startBattle());
+            this.bindButton('battleBtn', () => {
+                const enemy = this.gameEngine.generateRandomEnemy();
+                this.gameEngine.startBattle(enemy);
+            });
             this.bindButton('packBtn', () => this.ui.showShopView());
             this.bindButton('inventoryBtn', () => this.ui.showInventory());
             this.bindButton('friendsBtn', () => this.ui.showFriendsView());

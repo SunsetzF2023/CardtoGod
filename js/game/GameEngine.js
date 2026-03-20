@@ -555,6 +555,7 @@ export class GameEngine {
             id: 'enemy_' + Date.now(),
             type: type,
             name: template.name,
+            realm: player.realm, // 敌人境界与玩家相同或相近
             level: adjustedLevel,
             attack: Math.floor(template.baseAttack * levelMultiplier),
             defense: Math.floor(template.baseDefense * levelMultiplier),

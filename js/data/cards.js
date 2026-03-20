@@ -513,7 +513,7 @@ export const EQUIPMENT_CARDS = [
         id: 'eq_jade_ring',
         name: '玉戒指',
         type: CARD_TYPES.EQUIPMENT,
-        equipmentSlot: EQUIPMENT.SLOTS.ACCESSORY,
+        equipmentSlot: EQUIPMENT_SLOTS.ACCESSORY,
         rarity: RARITY.RARE,
         description: '美玉戒指',
         effects: { spiritPower: 15, cultivation: 3, health: 8 },

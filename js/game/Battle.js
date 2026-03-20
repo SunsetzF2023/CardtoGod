@@ -267,7 +267,7 @@ export class Battle {
     }
 
     /**
-     * 选择行动 - 增强AI逻辑
+     * 选择行动 - 增强AI逻辑 + 事件系统
      */
     selectAction(actor, opponent) {
         // 如果是玩家，返回默认攻击（实际游戏中应该由玩家选择）
@@ -284,6 +284,12 @@ export class Battle {
         const healthDiff = actor.stats.health - opponent.stats.health;
         const realmDiff = this.getRealmLevel(actor.realm || '炼气期') - this.getRealmLevel(opponent.realm || '炼气期');
 
+        // 特殊事件触发
+        const specialEvent = this.checkSpecialEvents(actor, opponent, healthPercent, realmDiff);
+        if (specialEvent) {
+            return specialEvent;
+        }
+
         // AI策略选择
         const strategy = this.selectAIStrategy(actor, opponent, healthPercent, spiritPercent, healthDiff, realmDiff);
         
@@ -299,6 +305,152 @@ export class Battle {
             default:
                 return this.selectBalancedAction(actor, opponent);
         }
+    }
+
+    /**
+     * 检查特殊战斗事件
+     */
+    checkSpecialEvents(actor, opponent, healthPercent, realmDiff) {
+        // 呼叫增援：血量低于30%且境界被压制
+        if (healthPercent < 0.3 && realmDiff < -1 && Math.random() < 0.3) {
+            this.addBattleLog(`${actor.name} 正在呼叫增援！`);
+            return this.triggerReinforcementEvent(actor, opponent);
+        }
+
+        // 智能逃跑：血量低于20%且明显不敌
+        if (healthPercent < 0.2 && realmDiff < -2 && Math.random() < 0.4) {
+            this.addBattleLog(`${actor.name} 试图逃跑！`);
+            return this.triggerEscapeEvent(actor, opponent);
+        }
+
+        // 狂暴模式：血量低于15%但境界更高
+        if (healthPercent < 0.15 && realmDiff > 0 && Math.random() < 0.5) {
+            this.addBattleLog(`${actor.name} 进入狂暴状态！`);
+            return this.triggerBerserkEvent(actor, opponent);
+        }
+
+        // 威吓：高境界对低境界首次见面
+        if (realmDiff > 1 && actor.actionCount === 0 && Math.random() < 0.3) {
+            this.addBattleLog(`${actor.name} 发出威吓！`);
+            return this.triggerIntimidateEvent(actor, opponent);
+        }
+
+        return null;
+    }
+
+    /**
+     * 触发增援事件
+     */
+    triggerReinforcementEvent(actor, opponent) {
+        setTimeout(() => {
+            // 生成增援敌人
+            const reinforcement = this.gameEngine.generateRandomEnemy(ENEMY_TYPES.BEAST);
+            reinforcement.level = Math.max(1, actor.level - 1); // 比主角稍弱
+            reinforcement.attack = Math.floor(actor.attack * 0.8);
+            reinforcement.defense = Math.floor(actor.defense * 0.8);
+            reinforcement.health = Math.floor(actor.health * 0.7);
+            reinforcement.maxHealth = reinforcement.health;
+            
+            this.addBattleLog(`增援 ${reinforcement.name} 出现了！`);
+            this.triggerReinforcementBattle(reinforcement);
+        }, 1500);
+
+        // 原敌人防御一回合
+        return { type: 'defend' };
+    }
+
+    /**
+     * 触发逃跑事件
+     */
+    triggerEscapeEvent(actor, opponent) {
+        const escapeChance = 0.3 + (actor.stats.speed / opponent.stats.speed) * 0.2;
+        
+        if (Math.random() < escapeChance) {
+            // 逃跑成功
+            setTimeout(() => {
+                this.addBattleLog(`${actor.name} 成功逃跑了！`);
+                this.endBattle('player_escape_victory', opponent, actor);
+            }, 1000);
+            
+            return { type: 'defend', message: '正在逃跑...' };
+        } else {
+            // 逃跑失败
+            this.addBattleLog(`${actor.name} 逃跑失败，陷入混乱！`);
+            actor.stats.spiritPower = Math.max(0, actor.stats.spiritPower - 10);
+            
+            return {
+                type: 'attack',
+                skill: actor.skills.find(s => s.id === 'basic_attack'),
+                penalty: true
+            };
+        }
+    }
+
+    /**
+     * 触发狂暴事件
+     */
+    triggerBerserkEvent(actor, opponent) {
+        // 狂暴状态：攻击力+50%，防御力-30%
+        actor.stats.attack = Math.floor(actor.stats.attack * 1.5);
+        actor.stats.defense = Math.floor(actor.stats.defense * 0.7);
+        
+        this.addBattleLog(`${actor.name} 攻击力大幅提升，防御力下降！`);
+        
+        // 必定使用最强攻击
+        const attackSkills = actor.skills.filter(s => s.type === TECHNIQUE_TYPES.ATTACK);
+        if (attackSkills.length > 0) {
+            const strongestSkill = attackSkills.reduce((prev, current) => 
+                (prev.damage > current.damage) ? prev : current
+            );
+            return { type: 'skill', skill: strongestSkill, berserk: true };
+        }
+        
+        return { type: 'attack', berserk: true };
+    }
+
+    /**
+     * 触发威吓事件
+     */
+    triggerIntimidateEvent(actor, opponent) {
+        // 威吓效果：玩家灵力减少，可能有恐惧效果
+        const intimidatePower = actor.level * 5;
+        const spiritLoss = Math.min(intimidatePower, opponent.stats.spiritPower * 0.2);
+        
+        opponent.stats.spiritPower = Math.max(0, opponent.stats.spiritPower - spiritLoss);
+        
+        this.addBattleLog(`${opponent.name} 被威吓，损失 ${Math.floor(spiritLoss)} 点灵力！`);
+        
+        // 威吓后攻击
+        return {
+            type: 'attack',
+            skill: actor.skills.find(s => s.id === 'basic_attack'),
+            intimidate: true
+        };
+    }
+
+    /**
+     * 触发增援战斗
+     */
+    triggerReinforcementBattle(reinforcement) {
+        // 结束当前战斗，立即开始增援战斗
+        const currentPlayer = this.currentBattle.participants.player.original;
+        const currentEnemy = this.currentBattle.participants.enemy.original;
+        
+        // 给予当前战斗的部分奖励
+        const partialRewards = {
+            cultivation: Math.floor(currentEnemy.level * 25),
+            spiritStones: currentEnemy.level * 1
+        };
+        
+        this.gameEngine.player.cultivate(partialRewards.cultivation);
+        this.gameEngine.player.addSpiritStones(partialRewards.spiritStones);
+        
+        this.addBattleLog(`击败 ${currentEnemy.name}，获得 ${partialRewards.cultivation} 修为！`);
+        
+        // 立即开始增援战斗
+        setTimeout(() => {
+            this.startBattle(currentPlayer, reinforcement);
+        }, 2000);
     }
 
     /**
@@ -777,31 +929,68 @@ export class Battle {
 
         if (result === 'victory' && winner.type === 'player') {
             const enemy = this.currentBattle.participants.enemy.original;
+            const player = this.gameEngine.player;
             
-            // 基础奖励 - 改为修为值
-            const baseCultivation = enemy.level * 50; // 每级给50点修为
+            // 基础修为奖励 - 基于敌人等级和境界
+            const enemyRealmLevel = this.getRealmLevel(enemy.realm || '炼气期');
+            const playerRealmLevel = this.getRealmLevel(player.realm);
+            const realmDiff = enemyRealmLevel - playerRealmLevel;
+            
+            // 修为计算公式
+            let baseCultivation = enemy.level * 30; // 基础：每级30修为
+            
+            // 境界加成：击败高境界敌人获得更多修为
+            if (realmDiff > 0) {
+                baseCultivation = Math.floor(baseCultivation * (1 + realmDiff * 0.5)); // 每高一级+50%
+            } else if (realmDiff < 0) {
+                baseCultivation = Math.floor(baseCultivation * (1 + realmDiff * 0.2)); // 每低一级-20%
+            }
+            
+            // 战斗时长加成：战斗越久，修为越多
+            const battleDuration = this.currentBattle.duration || 0;
+            const durationBonus = Math.min(battleDuration / 60, 0.5); // 最多50%加成
+            baseCultivation = Math.floor(baseCultivation * (1 + durationBonus));
+            
+            // 连击加成：快速击败有奖励
+            if (this.currentBattle.currentTurn <= 5) {
+                baseCultivation = Math.floor(baseCultivation * 1.2); // 20%快速击败加成
+            }
+            
             rewards.cultivation = baseCultivation;
             rewards.exp = Math.floor(baseCultivation * 0.1); // 经验值作为修为的10%
-            rewards.spiritStones = enemy.level * 2; // 每级给2个灵石
+            rewards.spiritStones = enemy.level * 3 + Math.floor(realmDiff * 2); // 境界差影响灵石
             
-            // 额外奖励
-            const levelDiff = enemy.level - winner.level;
-            const bonusMultiplier = Math.max(0.5, Math.min(2, 1 + levelDiff * 0.1));
-            
-            rewards.cultivation = Math.floor(rewards.cultivation * bonusMultiplier);
-            rewards.exp = Math.floor(rewards.exp * bonusMultiplier);
-            rewards.spiritStones = Math.floor(rewards.spiritStones * bonusMultiplier);
+            // 特殊事件奖励
+            if (this.currentBattle.specialEvents) {
+                events.forEach(event => {
+                    switch (event.type) {
+                        case 'reinforcement':
+                            rewards.cultivation = Math.floor(rewards.cultivation * 1.3); // 增援战斗+30%
+                            break;
+                        case 'berserk':
+                            rewards.cultivation = Math.floor(rewards.cultivation * 1.2); // 击败狂暴+20%
+                            break;
+                        case 'escape':
+                            rewards.cultivation = Math.floor(rewards.cultivation * 0.7); // 敌人逃跑-30%
+                            break;
+                    }
+                });
+            }
             
             // 随机卡牌奖励（小概率）
-            if (Math.random() < 0.1) {
+            if (Math.random() < 0.15) { // 提高概率
                 const cards = this.gameEngine.cardSystem.generateRandomCards(1, 'common');
                 rewards.cards = cards;
             }
         } else if (result === 'draw') {
             // 平局少量奖励
-            rewards.cultivation = 5;
+            rewards.cultivation = 8;
             rewards.exp = 1;
-            rewards.spiritStones = 1;
+            rewards.spiritStones = 2;
+        } else if (result === 'player_escape_victory') {
+            // 敌人逃跑的胜利奖励
+            rewards.cultivation = Math.floor(enemy.level * 15); // 一半奖励
+            rewards.spiritStones = Math.floor(enemy.level * 1.5);
         }
 
         return rewards;

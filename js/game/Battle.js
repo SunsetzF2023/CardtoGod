@@ -83,6 +83,12 @@ export class Battle {
         // 添加战斗日志
         this.addBattleLog(`战斗开始！${player.name} VS ${enemy.name}`);
         
+        // 开始处理战斗回合
+        if (this.currentBattle.currentActor === 'enemy') {
+            // 敌人先手，立即处理敌人行动
+            setTimeout(() => this.processBattleTurn(), 1000);
+        }
+        
         // 如果是自动战斗，立即开始
         if (player.settings.autoBattle) {
             this.processBattleTurn();

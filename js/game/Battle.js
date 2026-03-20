@@ -337,14 +337,21 @@ export class Battle {
         const attackPower = attacker.stats.attack;
         const defensePower = defender.stats.defense * (defender.isDefending ? 1.5 : 1);
         
-        // 计算基础伤害
-        let damage = Math.max(1, baseDamage + attackPower - defensePower);
+        // 改进的伤害计算公式
+        let damage = baseDamage + attackPower;
+        
+        // 防御力减少伤害，但不会让伤害太低
+        const defenseReduction = Math.min(defensePower * 0.3, damage * 0.7); // 最多减少70%伤害
+        damage = Math.max(3, damage - defenseReduction); // 最少造成3点伤害
         
         // 境界加成：高境界对低境界有额外伤害
         if (attacker.realm && defender.realm) {
             const realmDiff = this.getRealmLevel(attacker.realm) - this.getRealmLevel(defender.realm);
             if (realmDiff > 0) {
                 damage = Math.floor(damage * (1 + realmDiff * 0.2)); // 每高一个大境界+20%伤害
+            } else if (realmDiff < 0) {
+                // 低境界攻击高境界伤害减少
+                damage = Math.floor(damage * (1 + realmDiff * 0.1)); // 每低一个大境界-10%伤害
             }
         }
         
@@ -360,6 +367,10 @@ export class Battle {
             this.addBattleLog(`${defender.name} 闪避了 ${attacker.name} 的攻击！`);
             return;
         }
+        
+        // 随机浮动 ±20%
+        const randomFactor = 0.8 + Math.random() * 0.4;
+        damage = Math.floor(damage * randomFactor);
         
         // 造成伤害
         const actualDamage = Math.min(damage, defender.stats.health); // 不能超过剩余血量
